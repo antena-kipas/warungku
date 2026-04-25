@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesin Kasir - Warungku</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @media print {
+            body * { visibility: hidden; }
+            #area-struk, #area-struk * { visibility: visible; }
+            #area-struk { position: absolute; left: 0; top: 0; width: 58mm; font-family: monospace; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex">
+
+    <div class="w-2/3 h-full flex flex-col bg-white border-r">
+        <div class="p-4 bg-blue-700 text-white shadow-md flex justify-between items-center z-10">
+            <h1 class="text-3xl font-extrabold tracking-tight">Kasir Warung</h1>
+            <div class="relative w-1/2">
+                <input type="text" id="kolomCari" placeholder="Cari barang manual..." 
+                       class="w-full p-3 rounded-xl text-gray-800 text-xl font-medium focus:outline-none focus:ring-4 focus:ring-blue-300">
+            </div>
+            <a href="/dashboard" class="bg-slate-800 hover:bg-slate-900 px-5 py-3 rounded-lg font-bold text-white text-lg transition-colors shadow-md flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                Kembali
+            </a>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 bg-slate-50">
+            <div class="grid grid-cols-3 md:grid-cols-4 gap-6" id="gridProduk">
+                
+                <div onclick="tambahItem(1, 'Beras Ramos (Liter)', 12500)" class="bg-white rounded-2xl shadow-sm cursor-pointer hover:shadow-xl hover:-translate-y-1 transition transform border border-gray-200 p-3 flex flex-col items-center text-center">
+                    <div class="h-24 w-24 bg-blue-50 rounded-xl mb-3 flex items-center justify-center text-blue-300 border border-blue-100">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-lg leading-tight mb-1">Beras Ramos</h3>
+                    <p class="text-blue-600 font-extrabold text-lg mt-auto">Rp 12.500</p>
+                </div>
+                
+                <div onclick="tambahItem(2, 'Telur Ayam (Kg)', 28000)" class="bg-white rounded-2xl shadow-sm cursor-pointer hover:shadow-xl hover:-translate-y-1 transition transform border border-gray-200 p-3 flex flex-col items-center text-center">
+                    <div class="h-24 w-24 bg-orange-50 rounded-xl mb-3 flex items-center justify-center text-orange-300 border border-orange-100">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-lg leading-tight mb-1">Telur Ayam</h3>
+                    <p class="text-orange-600 font-extrabold text-lg mt-auto">Rp 28.000</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="w-1/3 h-full flex flex-col bg-white">
+        <div class="p-4 bg-slate-800 text-white text-center shadow-md z-10 flex justify-between items-center">
+            <h2 class="text-xl font-bold tracking-wide">Daftar Belanja</h2>
+            <button onclick="kosongkanKeranjang()" class="text-red-400 hover:text-red-300 text-sm font-bold bg-slate-700 px-3 py-1 rounded">Kosongkan</button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 bg-slate-50" id="area-struk">
+            <div class="hidden print:block text-center border-b-2 border-black pb-2 mb-2">
+                <h2 class="text-xl font-bold">WARUNGKU</h2>
+                <p class="text-xs border-t border-black mt-1 pt-1" id="waktuPrint"></p>
+            </div>
+            <ul id="daftarKeranjang" class="space-y-2"></ul>
+            <div class="hidden print:block border-t-2 border-dashed border-black mt-2 pt-2"></div>
+        </div>
+
+        <div class="p-5 bg-white border-t border-gray-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-10">
+            <div class="flex justify-between items-end mb-4">
+                <span class="text-xl font-bold text-gray-500">Total</span>
+                <span class="text-4xl font-extrabold text-green-600 tracking-tight" id="teksTotal">Rp 0</span>
+            </div>
+            
+            <button onclick="bayarDanPrint()" class="w-full bg-green-500 hover:bg-green-600 text-white font-extrabold py-4 rounded-xl text-2xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                BAYAR (Enter)
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let keranjang = [];
+        let totalHarga = 0;
+
+        function formatRupiah(angka) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka); }
+
+        function tambahItem(id, nama, harga) {
+            let itemSama = keranjang.find(item => item.id === id);
+            if (itemSama) { itemSama.qty += 1; } else { keranjang.push({ id: id, nama: nama, harga: harga, qty: 1 }); }
+            perbaruiLayarKeranjang();
+        }
+
+        function perbaruiLayarKeranjang() {
+            const wadah = document.getElementById('daftarKeranjang');
+            const teksTotal = document.getElementById('teksTotal');
+            wadah.innerHTML = ''; totalHarga = 0;
+
+            keranjang.forEach((item, urutan) => {
+                let subtotal = item.harga * item.qty;
+                totalHarga += subtotal;
+                wadah.innerHTML += `
+                    <li class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-gray-100 print:shadow-none print:border-none print:p-0 print:mb-1">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-gray-900 text-lg print:text-sm leading-tight">${item.nama}</h4>
+                            <p class="text-gray-500 font-medium text-base print:text-xs">${item.qty} x ${formatRupiah(item.harga)}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-gray-900 text-lg print:text-sm mb-1">${formatRupiah(subtotal)}</p>
+                            <button onclick="hapusItem(${urutan})" class="text-red-500 text-xs font-bold bg-red-50 hover:bg-red-100 px-2 py-1 rounded no-print">Batal</button>
+                        </div>
+                    </li>
+                `;
+            });
+            teksTotal.innerText = formatRupiah(totalHarga);
+        }
+
+        function hapusItem(urutan) { keranjang.splice(urutan, 1); perbaruiLayarKeranjang(); }
+        function kosongkanKeranjang() { keranjang = []; perbaruiLayarKeranjang(); }
+
+        function bayarDanPrint() {
+            if (keranjang.length === 0) return;
+            document.getElementById('waktuPrint').innerText = new Date().toLocaleString('id-ID');
+            window.print(); 
+            kosongkanKeranjang(); 
+        }
+
+        // Scanner Barcode (Mendeteksi input cepat yang diakhiri 'Enter')
+        let rekamanBarcode = '';
+        let timerJeda;
+        document.addEventListener('keydown', function(event) {
+            if (document.activeElement.id === 'kolomCari') return;
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                if (rekamanBarcode.length > 4) {
+                    console.log("Scanner menangkap:", rekamanBarcode);
+                    tambahItem('B001', 'Kecap Bango', 25000); // Simulasi
+                    rekamanBarcode = ''; 
+                } else if (keranjang.length > 0) {
+                    bayarDanPrint();
+                }
+            } else {
+                rekamanBarcode += event.key;
+                clearTimeout(timerJeda);
+                timerJeda = setTimeout(() => { rekamanBarcode = ''; }, 50); 
+            }
+        });
+    </script>
+</body>
+</html>
