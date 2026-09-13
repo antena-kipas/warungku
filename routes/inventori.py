@@ -16,10 +16,12 @@ def daftar_produk():
     if request.method == 'POST':
         barcode = request.form['barcode']
         nama_barang = request.form['nama_barang']
-        stok = request.form['stok']
-        harga_beli = request.form['harga_beli']
-        harga_eceran = request.form['harga_eceran']
-        harga_grosir = request.form['harga_grosir']
+        stok = request.form.get('stok', 0)
+        harga_beli = request.form.get('harga_beli', 0)
+        
+        
+        harga_eceran = request.form.get('harga_eceran', 0)
+        harga_grosir = request.form.get('harga_grosir', 0)
         
         try:
             conn.execute('''

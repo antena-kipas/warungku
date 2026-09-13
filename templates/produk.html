@@ -132,16 +132,16 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
+                <div class="grid grid-cols-2 gap-4" id="hargaGrid">
+                    <div id="containerEceran">
                         <label class="block text-emerald-600 text-sm font-bold mb-2">HARGA ECERAN</label>
-                        <input type="number" name="harga_eceran" required placeholder="Rp"
-                               class="w-full p-4 border-2 border-emerald-100 rounded-2xl outline-none focus:border-emerald-500 transition-all">
+                        <input type="number" name="harga_eceran" id="inputEceran" required placeholder="Rp"
+                            class="w-full p-4 border-2 border-emerald-100 rounded-2xl outline-none focus:border-emerald-500 transition-all">
                     </div>
-                    <div>
+                    <div id="containerGrosir">
                         <label class="block text-orange-500 text-sm font-bold mb-2">HARGA GROSIR</label>
-                        <input type="number" name="harga_grosir" required placeholder="Rp"
-                               class="w-full p-4 border-2 border-orange-100 rounded-2xl outline-none focus:border-orange-500 transition-all">
+                        <input type="number" name="harga_grosir" id="inputGrosir" required placeholder="Rp"
+                            class="w-full p-4 border-2 border-orange-100 rounded-2xl outline-none focus:border-orange-500 transition-all">
                     </div>
                 </div>
 
@@ -160,19 +160,43 @@
             const title = document.getElementById('modalTitle');
             const body = document.body;
 
+            // Ambil elemen form harga
+            const containerEceran = document.getElementById('containerEceran');
+            const containerGrosir = document.getElementById('containerGrosir');
+            const inputEceran = document.getElementById('inputEceran');
+            const inputGrosir = document.getElementById('inputGrosir');
+            const hargaGrid = document.getElementById('hargaGrid');
+
             if (tipe) {
                 modal.classList.remove('opacity-0', 'pointer-events-none');
                 body.classList.add('modal-active');
                 document.getElementById('inputBarcode').focus();
 
+                // Ubah grid agar penuh 1 kolom saat salah satu disembunyikan
+                hargaGrid.classList.remove('grid-cols-2');
+                hargaGrid.classList.add('grid-cols-1');
+
                 if (tipe === 'eceran') {
                     header.className = 'p-6 text-white flex justify-between items-center bg-emerald-600';
                     btnSubmit.className = 'w-full py-5 rounded-2xl text-white font-extrabold text-lg shadow-lg bg-emerald-600 hover:bg-emerald-700 transition-all';
                     title.innerText = 'Tambah Barang Eceran';
-                } else {
+                    
+                    // Tampilkan Eceran, Sembunyikan Grosir
+                    containerEceran.style.display = 'block';
+                    inputEceran.required = true;
+                    containerGrosir.style.display = 'none';
+                    inputGrosir.required = false;
+
+                } else if (tipe === 'grosir') {
                     header.className = 'p-6 text-white flex justify-between items-center bg-orange-500';
                     btnSubmit.className = 'w-full py-5 rounded-2xl text-white font-extrabold text-lg shadow-lg bg-orange-500 hover:bg-orange-600 transition-all';
                     title.innerText = 'Tambah Barang Grosir';
+                    
+                    // Tampilkan Grosir, Sembunyikan Eceran
+                    containerGrosir.style.display = 'block';
+                    inputGrosir.required = true;
+                    containerEceran.style.display = 'none';
+                    inputEceran.required = false;
                 }
             } else {
                 modal.classList.add('opacity-0', 'pointer-events-none');

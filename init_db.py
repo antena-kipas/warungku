@@ -13,7 +13,7 @@ cur = conn.cursor()
 
 # 4. Buat akun pertama (Akun Admin/Kasir Nenek)
 # Kita akan buatkan username 'admin' dengan password 'rahasia'
-password_asli = 'Warungku-ada-di-sukabumi'
+password_asli = 'password'
 password_acak = generate_password_hash(password_asli)
 
 cur.execute(
