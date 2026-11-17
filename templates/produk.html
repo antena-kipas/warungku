@@ -1,208 +1,287 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Barang - Warungku</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .modal { transition: opacity 0.25s ease; }
-        body.modal-active { overflow: hidden; }
-    </style>
-</head>
-<body class="bg-gray-50 h-screen flex">
+{% extends 'base.html' %}
+{% block judul %}Data Barang - Warungku{% endblock %}
 
-    <aside class="w-56 bg-slate-900 text-white flex flex-col h-full shadow-2xl z-20">
-        <div class="p-6 flex items-center justify-center border-b border-slate-700">
-            <div class="text-2xl font-extrabold tracking-wider text-blue-400">WARUNGKU</div>
+{% block kepala %}
+<style>
+    .modal { transition: opacity 0.25s ease; }
+    #zonaGambar.di-atas { border-color: #2563eb; background: #eff6ff; }
+</style>
+{% endblock %}
+
+{% block isi %}
+<div class="max-w-6xl mx-auto">
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-slate-900">Manajemen Stok</h1>
+            <p class="text-slate-600 text-lg">Kelola daftar barang di sini.</p>
         </div>
-        <nav class="flex-1 px-4 py-6 space-y-2">
-            <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                Dashboard
-            </a>
-            <a href="/transaksi" class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                Buka Kasir
-            </a>
-            <a href="/produk" class="flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                Data Barang
-            </a>
-        </nav>
-    </aside>
 
-    <main class="flex-1 overflow-y-auto p-6 lg:p-10">
-        <div class="max-w-5xl mx-auto">
-            
-            <div class="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-4">
-                <div>
-                    <h1 class="text-3xl font-extrabold text-slate-800">Manajemen Stok</h1>
-                    <p class="text-slate-500">Kelola daftar barang di sini.</p>
-                </div>
-                
-                <div class="flex gap-3">
-                    <button onclick="toggleModal('eceran')" class="flex-1 md:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        Scan Eceran
-                    </button>
-                    <button onclick="toggleModal('grosir')" class="flex-1 md:flex-none px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                        Scan Grosir
-                    </button>
-                </div>
-            </div>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="p-4 mb-6 rounded-xl font-bold {% if category == 'success' %} bg-green-100 text-green-700 {% else %} bg-red-100 text-red-700 {% endif %}">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-50 border-b border-slate-100 text-slate-500 text-sm">
-                        <tr>
-                            <th class="p-4">Barcode</th>
-                            <th class="p-4">Nama Barang</th>
-                            <th class="p-4">Stok</th>
-                            <th class="p-4">Harga Jual</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        {% for item in barang %}
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="p-4 font-mono text-blue-600 font-bold">{{ item.barcode }}</td>
-                            <td class="p-4 font-medium text-slate-700">{{ item.nama_barang }}</td>
-                            <td class="p-4 font-bold">{{ item.stok }}</td>
-                            <td class="p-4">
-                                <div class="text-xs text-slate-400">Eceran: <span class="text-emerald-600 font-bold">Rp {{ item.harga_eceran }}</span></div>
-                                <div class="text-xs text-slate-400">Grosir: <span class="text-orange-500 font-bold">Rp {{ item.harga_grosir }}</span></div>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="p-10 text-center text-slate-400">Belum ada data barang.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
-
-    <div id="modalBarang" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none modal transition-all duration-300">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm shadow-inner" onclick="toggleModal()"></div>
-        
-        <div class="bg-white w-full max-w-lg mx-4 rounded-3xl shadow-2xl relative z-10 overflow-hidden">
-            <div id="modalHeader" class="p-6 text-white flex justify-between items-center">
-                <h2 id="modalTitle" class="text-xl font-extrabold tracking-tight uppercase">Tambah Barang</h2>
-                <button onclick="toggleModal()" class="text-white/80 hover:text-white">&times;</button>
-            </div>
-
-            <form action="/produk" method="POST" class="p-8 space-y-6">
-                <div>
-                    <label class="block text-slate-500 text-sm font-bold mb-2">SCAN BARCODE</label>
-                    <input type="text" name="barcode" id="inputBarcode" required autofocus 
-                           class="w-full p-4 bg-slate-100 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none font-mono text-xl transition-all">
-                </div>
-
-                <div>
-                    <label class="block text-slate-500 text-sm font-bold mb-2">NAMA BARANG</label>
-                    <input type="text" name="nama_barang" id="inputNamaBarang" required placeholder="Contoh: Kopi Sachet"
-                        class="w-full p-4 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 transition-all">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-slate-500 text-sm font-bold mb-2">STOK AWAL</label>
-                        <input type="number" name="stok" value="0" min="0" required
-                               class="w-full p-4 border border-slate-200 rounded-2xl outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-slate-500 text-sm font-bold mb-2">HARGA MODAL</label>
-                        <input type="number" name="harga_beli" required placeholder="Rp"
-                               class="w-full p-4 border border-slate-200 rounded-2xl outline-none">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4" id="hargaGrid">
-                    <div id="containerEceran">
-                        <label class="block text-emerald-600 text-sm font-bold mb-2">HARGA ECERAN</label>
-                        <input type="number" name="harga_eceran" id="inputEceran" required placeholder="Rp"
-                            class="w-full p-4 border-2 border-emerald-100 rounded-2xl outline-none focus:border-emerald-500 transition-all">
-                    </div>
-                    <div id="containerGrosir">
-                        <label class="block text-orange-500 text-sm font-bold mb-2">HARGA GROSIR</label>
-                        <input type="number" name="harga_grosir" id="inputGrosir" required placeholder="Rp"
-                            class="w-full p-4 border-2 border-orange-100 rounded-2xl outline-none focus:border-orange-500 transition-all">
-                    </div>
-                </div>
-
-                <button type="submit" id="btnSubmit" class="w-full py-5 rounded-2xl text-white font-extrabold text-lg shadow-lg transform active:scale-95 transition-all">
-                    SIMPAN KE DATABASE
-                </button>
-            </form>
+        <div class="flex gap-3">
+            <button type="button" onclick="bukaModal('eceran')" class="flex-1 md:flex-none px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Scan Eceran
+            </button>
+            <button type="button" onclick="bukaModal('grosir')" class="flex-1 md:flex-none px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white text-lg font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                Scan Grosir
+            </button>
         </div>
     </div>
 
-    <script>
-        function toggleModal(tipe = null) {
-            const modal = document.getElementById('modalBarang');
-            const header = document.getElementById('modalHeader');
-            const btnSubmit = document.getElementById('btnSubmit');
-            const title = document.getElementById('modalTitle');
-            const body = document.body;
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+                <tr>
+                    <th class="p-4 font-semibold">Gambar</th>
+                    <th class="p-4 font-semibold">Nama Barang</th>
+                    <th class="p-4 font-semibold">Barcode</th>
+                    <th class="p-4 font-semibold">Stok</th>
+                    <th class="p-4 font-semibold">Harga Jual</th>
+                    <th class="p-4 font-semibold"><span class="sr-only">Ubah</span></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for item in barang %}
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="p-4">
+                        <div class="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center text-slate-400 text-xs text-center">
+                            {% if item.gambar %}
+                                <img src="{{ url_gambar(item.gambar) }}" alt="" class="w-full h-full object-cover">
+                            {% else %}
+                                belum ada
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="p-4 font-semibold text-lg text-slate-900">{{ item.nama_barang }}</td>
+                    <td class="p-4 font-mono text-slate-700">{{ item.barcode or '-' }}</td>
+                    <td class="p-4">
+                        {% if item.stok <= 0 %}
+                            <span class="px-3 py-1 rounded-lg bg-red-100 text-red-800 font-bold whitespace-nowrap">✕ Habis</span>
+                        {% elif item.stok <= 5 %}
+                            <span class="px-3 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold whitespace-nowrap">! Sisa {{ item.stok }}</span>
+                        {% else %}
+                            <span class="font-bold text-lg text-slate-900">{{ item.stok }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="p-4 whitespace-nowrap">
+                        <div class="text-sm text-slate-600">Eceran: <span class="text-slate-900 font-bold">{{ item.harga_eceran|rupiah if item.harga_eceran else '-' }}</span></div>
+                        <div class="text-sm text-slate-600">Grosir: <span class="text-slate-900 font-bold">{{ item.harga_grosir|rupiah if item.harga_grosir else '-' }}</span></div>
+                    </td>
+                    <td class="p-4 text-right">
+                        <button type="button" class="tombol-ubah px-5 py-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold"
+                                data-barang='{{ {"id": item.id_barang, "barcode": item.barcode or "", "nama": item.nama_barang, "stok": item.stok,
+                                                 "harga_beli": item.harga_beli, "harga_eceran": item.harga_eceran, "harga_grosir": item.harga_grosir,
+                                                 "gambar": url_gambar(item.gambar)}|tojson }}'>
+                            Ubah
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="p-10 text-center text-slate-500 text-lg">Belum ada data barang.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-            // Ambil elemen form harga
-            const containerEceran = document.getElementById('containerEceran');
-            const containerGrosir = document.getElementById('containerGrosir');
-            const inputEceran = document.getElementById('inputEceran');
-            const inputGrosir = document.getElementById('inputGrosir');
-            const hargaGrid = document.getElementById('hargaGrid');
+<!-- Jendela tambah / ubah barang -->
+<div id="modalBarang" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none modal" aria-hidden="true">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="tutupModal()"></div>
 
-            if (tipe) {
-                modal.classList.remove('opacity-0', 'pointer-events-none');
-                body.classList.add('modal-active');
-                document.getElementById('inputBarcode').focus();
+    <div class="bg-white w-full max-w-lg mx-4 rounded-3xl shadow-2xl relative z-10 overflow-hidden max-h-[95vh] flex flex-col" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div id="modalHeader" class="p-5 text-white flex justify-between items-center">
+            <h2 id="modalTitle" class="text-xl font-extrabold tracking-tight uppercase">Tambah Barang</h2>
+            <button type="button" onclick="tutupModal()" aria-label="Tutup" class="text-white/90 hover:text-white text-4xl leading-none px-2">&times;</button>
+        </div>
 
-                // Ubah grid agar penuh 1 kolom saat salah satu disembunyikan
-                hargaGrid.classList.remove('grid-cols-2');
-                hargaGrid.classList.add('grid-cols-1');
+        <form id="formBarang" action="/produk" method="POST" enctype="multipart/form-data" class="p-6 space-y-5 overflow-y-auto">
 
-                if (tipe === 'eceran') {
-                    header.className = 'p-6 text-white flex justify-between items-center bg-emerald-600';
-                    btnSubmit.className = 'w-full py-5 rounded-2xl text-white font-extrabold text-lg shadow-lg bg-emerald-600 hover:bg-emerald-700 transition-all';
-                    title.innerText = 'Tambah Barang Eceran';
-                    
-                    // Tampilkan Eceran, Sembunyikan Grosir
-                    containerEceran.style.display = 'block';
-                    inputEceran.required = true;
-                    containerGrosir.style.display = 'none';
-                    inputGrosir.required = false;
+            <!-- Foto barang: bisa diseret dari folder, atau diklik untuk memilih -->
+            <div>
+                <span class="block text-slate-600 text-sm font-bold mb-2">FOTO BARANG</span>
+                <label id="zonaGambar" for="inputGambar" class="flex items-center gap-4 p-4 border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl cursor-pointer transition-colors">
+                    <div id="pratinjau" class="w-24 h-24 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 text-slate-400"></div>
+                    <div>
+                        <p class="font-bold text-slate-900 text-lg">Seret foto ke sini</p>
+                        <p class="text-slate-600">atau klik untuk memilih foto dari komputer</p>
+                        <p id="galatGambar" class="text-red-700 font-semibold mt-1" hidden></p>
+                    </div>
+                    <input type="file" id="inputGambar" name="gambar" accept="image/png,image/jpeg,image/webp,image/gif" class="sr-only">
+                </label>
+            </div>
 
-                } else if (tipe === 'grosir') {
-                    header.className = 'p-6 text-white flex justify-between items-center bg-orange-500';
-                    btnSubmit.className = 'w-full py-5 rounded-2xl text-white font-extrabold text-lg shadow-lg bg-orange-500 hover:bg-orange-600 transition-all';
-                    title.innerText = 'Tambah Barang Grosir';
-                    
-                    // Tampilkan Grosir, Sembunyikan Eceran
-                    containerGrosir.style.display = 'block';
-                    inputGrosir.required = true;
-                    containerEceran.style.display = 'none';
-                    inputEceran.required = false;
-                }
-            } else {
-                modal.classList.add('opacity-0', 'pointer-events-none');
-                body.classList.remove('modal-active');
-            }
+            <div>
+                <label for="inputBarcode" class="block text-slate-600 text-sm font-bold mb-2">SCAN BARCODE <span class="font-normal">(kosongkan kalau barang tidak punya barcode)</span></label>
+                <input type="text" name="barcode" id="inputBarcode" autocomplete="off"
+                       class="w-full p-4 bg-slate-100 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none font-mono text-xl transition-all">
+            </div>
+
+            <div>
+                <label for="inputNamaBarang" class="block text-slate-600 text-sm font-bold mb-2">NAMA BARANG</label>
+                <input type="text" name="nama_barang" id="inputNamaBarang" required placeholder="Contoh: Kopi Sachet" autocomplete="off"
+                       class="w-full p-4 border border-slate-300 rounded-2xl outline-none text-lg focus:ring-2 focus:ring-blue-500/30 transition-all">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="inputStok" id="labelStok" class="block text-slate-600 text-sm font-bold mb-2">STOK AWAL</label>
+                    <input type="number" name="stok" id="inputStok" value="0" min="0" required
+                           class="w-full p-4 border border-slate-300 rounded-2xl outline-none text-lg">
+                </div>
+                <div>
+                    <label for="inputModal" class="block text-slate-600 text-sm font-bold mb-2">HARGA MODAL</label>
+                    <input type="number" name="harga_beli" id="inputModal" min="0" required placeholder="Rp"
+                           class="w-full p-4 border border-slate-300 rounded-2xl outline-none text-lg">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4" id="hargaGrid">
+                <div id="containerEceran">
+                    <label for="inputEceran" class="block text-emerald-700 text-sm font-bold mb-2">HARGA ECERAN</label>
+                    <input type="number" name="harga_eceran" id="inputEceran" min="0" placeholder="Rp"
+                           class="w-full p-4 border-2 border-emerald-200 rounded-2xl outline-none text-lg focus:border-emerald-500 transition-all">
+                </div>
+                <div id="containerGrosir">
+                    <label for="inputGrosir" class="block text-orange-700 text-sm font-bold mb-2">HARGA GROSIR</label>
+                    <input type="number" name="harga_grosir" id="inputGrosir" min="0" placeholder="Rp"
+                           class="w-full p-4 border-2 border-orange-200 rounded-2xl outline-none text-lg focus:border-orange-500 transition-all">
+                </div>
+            </div>
+
+            <button type="submit" id="btnSubmit" class="w-full py-5 rounded-2xl text-white font-extrabold text-lg shadow-lg transform active:scale-95 transition-all">
+                SIMPAN KE DATABASE
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block skrip %}
+<script>
+    const el = id => document.getElementById(id);
+    const IKON_FOTO = '<svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+
+    // Warna dan judul jendela untuk tiap keperluan
+    const TAMPILAN = {
+        eceran: { warna: 'bg-emerald-600', judul: 'Tambah Barang Eceran', tombol: 'SIMPAN KE DATABASE' },
+        grosir: { warna: 'bg-orange-600', judul: 'Tambah Barang Grosir', tombol: 'SIMPAN KE DATABASE' },
+        ubah:   { warna: 'bg-blue-700', judul: 'Ubah Barang', tombol: 'SIMPAN PERUBAHAN' },
+    };
+
+    function tampilkanPratinjau(alamat) {
+        el('pratinjau').innerHTML = alamat ? `<img src="${alamat}" alt="" class="w-full h-full object-cover">` : IKON_FOTO;
+    }
+
+    // tipe: 'eceran' | 'grosir' (barang baru) atau 'ubah' (barang lama, data diisi dari tabel)
+    function bukaModal(tipe, barang = null) {
+        const form = el('formBarang');
+        const tampilan = TAMPILAN[tipe];
+
+        form.reset();
+        el('galatGambar').hidden = true;
+        el('modalHeader').className = 'p-5 text-white flex justify-between items-center ' + tampilan.warna;
+        el('btnSubmit').className = 'w-full py-5 rounded-2xl text-white font-extrabold text-lg shadow-lg transition-all hover:brightness-90 ' + tampilan.warna;
+        el('btnSubmit').innerText = tampilan.tombol;
+        el('modalTitle').innerText = tampilan.judul;
+
+        // Barang eceran hanya mengisi harga eceran, barang grosir hanya harga grosir.
+        // Saat mengubah, kedua harga ditampilkan.
+        const pakaiEceran = tipe !== 'grosir';
+        const pakaiGrosir = tipe !== 'eceran';
+        el('containerEceran').style.display = pakaiEceran ? 'block' : 'none';
+        el('containerGrosir').style.display = pakaiGrosir ? 'block' : 'none';
+        el('inputEceran').required = tipe === 'eceran';
+        el('inputGrosir').required = tipe === 'grosir';
+        el('hargaGrid').classList.toggle('grid-cols-2', tipe === 'ubah');
+        el('hargaGrid').classList.toggle('grid-cols-1', tipe !== 'ubah');
+
+        if (tipe === 'ubah') {
+            form.action = `/produk/${barang.id}/ubah`;
+            el('inputBarcode').value = barang.barcode;
+            el('inputNamaBarang').value = barang.nama;
+            el('inputStok').value = barang.stok;
+            el('inputModal').value = barang.harga_beli;
+            el('inputEceran').value = barang.harga_eceran || '';
+            el('inputGrosir').value = barang.harga_grosir || '';
+            el('labelStok').innerText = 'STOK SEKARANG';
+            tampilkanPratinjau(barang.gambar);
+        } else {
+            form.action = '/produk';
+            el('labelStok').innerText = 'STOK AWAL';
+            tampilkanPratinjau(null);
         }
-    </script>
-</body>
-</html>
+
+        el('modalBarang').classList.remove('opacity-0', 'pointer-events-none');
+        el('modalBarang').setAttribute('aria-hidden', 'false');
+        (tipe === 'ubah' ? el('inputNamaBarang') : el('inputBarcode')).focus();
+    }
+
+    function tutupModal() {
+        el('modalBarang').classList.add('opacity-0', 'pointer-events-none');
+        el('modalBarang').setAttribute('aria-hidden', 'true');
+    }
+
+    document.querySelectorAll('.tombol-ubah').forEach(tombol => {
+        tombol.addEventListener('click', () => bukaModal('ubah', JSON.parse(tombol.dataset.barang)));
+    });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape') tutupModal(); });
+
+    // Scanner menekan Enter setelah membaca barcode. Jangan langsung simpan, pindah ke kolom nama dulu.
+    el('inputBarcode').addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); el('inputNamaBarang').focus(); }
+    });
+
+    // ---------------------------------------------------------------------
+    // FOTO BARANG: seret atau pilih, lalu diperkecil dulu sebelum dikirim.
+    // Foto dari HP bisa 5 MB lebih; setelah diperkecil jadi sekitar 100 KB
+    // sehingga layar kasir tetap ringan dibuka.
+    // ---------------------------------------------------------------------
+    async function perkecilGambar(berkas, sisiTerpanjang = 640) {
+        const gambar = await createImageBitmap(berkas);
+        const skala = Math.min(1, sisiTerpanjang / Math.max(gambar.width, gambar.height));
+        const kanvas = document.createElement('canvas');
+        kanvas.width = Math.round(gambar.width * skala);
+        kanvas.height = Math.round(gambar.height * skala);
+        const kuas = kanvas.getContext('2d');
+        kuas.fillStyle = '#ffffff';   // latar putih untuk gambar yang tembus pandang
+        kuas.fillRect(0, 0, kanvas.width, kanvas.height);
+        kuas.drawImage(gambar, 0, 0, kanvas.width, kanvas.height);
+        const hasil = await new Promise(selesai => kanvas.toBlob(selesai, 'image/jpeg', 0.85));
+        return new File([hasil], 'barang.jpg', { type: 'image/jpeg' });
+    }
+
+    async function pakaiGambar(berkas) {
+        const galat = el('galatGambar');
+        galat.hidden = true;
+        if (!berkas) return;
+        if (!berkas.type.startsWith('image/')) {
+            galat.textContent = 'Itu bukan file gambar. Pilih foto (JPG atau PNG).';
+            galat.hidden = false;
+            el('inputGambar').value = '';
+            return;
+        }
+        let siapKirim = berkas;
+        try { siapKirim = await perkecilGambar(berkas); } catch (galatPerkecil) { /* kirim apa adanya */ }
+
+        // Pasang hasilnya ke kolom file supaya ikut terkirim bersama form
+        const wadah = new DataTransfer();
+        wadah.items.add(siapKirim);
+        el('inputGambar').files = wadah.files;
+        tampilkanPratinjau(URL.createObjectURL(siapKirim));
+    }
+
+    el('inputGambar').addEventListener('change', event => pakaiGambar(event.target.files[0]));
+
+    const zona = el('zonaGambar');
+    ['dragenter', 'dragover'].forEach(nama => zona.addEventListener(nama, event => { event.preventDefault(); zona.classList.add('di-atas'); }));
+    ['dragleave', 'drop'].forEach(nama => zona.addEventListener(nama, () => zona.classList.remove('di-atas')));
+    zona.addEventListener('drop', event => { event.preventDefault(); pakaiGambar(event.dataTransfer.files[0]); });
+
+    // Kalau foto terlepas di luar kotak, jangan sampai browser malah membuka fotonya
+    window.addEventListener('dragover', event => event.preventDefault());
+    window.addEventListener('drop', event => event.preventDefault());
+</script>
+{% endblock %}

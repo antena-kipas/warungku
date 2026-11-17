@@ -7,147 +7,491 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; -webkit-user-select: none; user-select: none; }
+        input { -webkit-user-select: text; user-select: text; }
+
+        /* --- Kartu barang yang bisa diseret --- */
+        .kartu { cursor: grab; touch-action: pan-y; }
+        .kartu.diangkat { opacity: .35; }
+        body.sedang-seret, body.sedang-seret * { cursor: grabbing !important; }
+
+        /* Gambar yang ikut bergerak mengikuti jari / mouse saat diseret */
+        #bayangan {
+            position: fixed; z-index: 60; width: 128px; height: 128px; margin: -64px 0 0 -64px;
+            pointer-events: none; border-radius: 18px; overflow: hidden; background: #fff;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, .4); transform: rotate(-4deg);
+            border: 4px solid #fff;
+        }
+
+        /* Tempat melepas gambar (menutupi daftar belanja selama menyeret) */
+        #zonaLepas { opacity: 0; transition: opacity .15s, background-color .15s, border-color .15s; }
+        body.sedang-seret #zonaLepas { opacity: 1; }
+        #zonaLepas.di-atas { background: rgba(220, 252, 231, .96); border-color: #16a34a; color: #166534; }
+
+        /* Barang yang baru masuk keranjang berkedip sebentar supaya kelihatan */
+        @keyframes barangMasuk { from { background: #bbf7d0; } to { background: #fff; } }
+        .baru-masuk { animation: barangMasuk 1s ease-out; }
+
+        /* --- Struk: hanya muncul saat dicetak --- */
+        #strukCetak { display: none; }
         @media print {
-            body * { visibility: hidden; }
-            #area-struk, #area-struk * { visibility: visible; }
-            #area-struk { position: absolute; left: 0; top: 0; width: 58mm; font-family: monospace; }
-            .no-print { display: none !important; }
+            @page { margin: 3mm; }
+            body { display: block !important; height: auto !important; overflow: visible !important; background: #fff !important; }
+            body > *:not(#strukCetak) { display: none !important; }
+            #strukCetak { display: block; width: 58mm; font-family: monospace; font-size: 11px; line-height: 1.35; color: #000; }
         }
     </style>
 </head>
 <body class="bg-gray-100 h-screen overflow-hidden flex">
 
+    <!-- ================= KIRI: PILIHAN BARANG ================= -->
     <div class="w-2/3 h-full flex flex-col bg-white border-r">
-        <div class="p-4 bg-blue-700 text-white shadow-md flex justify-between items-center z-10">
-            <h1 class="text-3xl font-extrabold tracking-tight">Kasir Warung</h1>
-            <div class="relative w-1/2">
-                <input type="text" id="kolomCari" placeholder="Cari barang manual..." 
-                       class="w-full p-3 rounded-xl text-gray-800 text-xl font-medium focus:outline-none focus:ring-4 focus:ring-blue-300">
+        <div class="p-4 bg-blue-700 text-white shadow-md flex items-center gap-4 z-10">
+            <h1 class="text-3xl font-extrabold tracking-tight whitespace-nowrap">Kasir Warung</h1>
+
+            <input type="text" id="kolomCari" placeholder="Cari barang..." autocomplete="off" aria-label="Cari barang"
+                   class="flex-1 min-w-0 p-3 rounded-xl text-gray-800 text-xl font-medium focus:outline-none focus:ring-4 focus:ring-blue-300">
+
+            <!-- Pilihan harga: eceran atau grosir -->
+            <div class="flex bg-blue-900/60 rounded-xl p-1 shrink-0" role="group" aria-label="Jenis harga">
+                <button type="button" data-mode="Eceran" aria-pressed="true" class="tombol-mode px-4 py-2 rounded-lg text-lg font-bold">Eceran</button>
+                <button type="button" data-mode="Grosir" aria-pressed="false" class="tombol-mode px-4 py-2 rounded-lg text-lg font-bold">Grosir</button>
             </div>
-            <a href="/dashboard" class="bg-slate-800 hover:bg-slate-900 px-5 py-3 rounded-lg font-bold text-white text-lg transition-colors shadow-md flex items-center gap-2">
+
+            <a href="/dashboard" class="bg-slate-800 hover:bg-slate-900 px-5 py-3 rounded-lg font-bold text-white text-lg transition-colors shadow-md flex items-center gap-2 shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                 Kembali
             </a>
         </div>
 
         <div class="flex-1 overflow-y-auto p-6 bg-slate-50">
-            <div class="grid grid-cols-3 md:grid-cols-4 gap-6" id="gridProduk">
-                
-                <div onclick="tambahItem(1, 'Beras Ramos (Liter)', 12500)" class="bg-white rounded-2xl shadow-sm cursor-pointer hover:shadow-xl hover:-translate-y-1 transition transform border border-gray-200 p-3 flex flex-col items-center text-center">
-                    <div class="h-24 w-24 bg-blue-50 rounded-xl mb-3 flex items-center justify-center text-blue-300 border border-blue-100">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    </div>
-                    <h3 class="font-bold text-gray-800 text-lg leading-tight mb-1">Beras Ramos</h3>
-                    <p class="text-blue-600 font-extrabold text-lg mt-auto">Rp 12.500</p>
-                </div>
-                
-                <div onclick="tambahItem(2, 'Telur Ayam (Kg)', 28000)" class="bg-white rounded-2xl shadow-sm cursor-pointer hover:shadow-xl hover:-translate-y-1 transition transform border border-gray-200 p-3 flex flex-col items-center text-center">
-                    <div class="h-24 w-24 bg-orange-50 rounded-xl mb-3 flex items-center justify-center text-orange-300 border border-orange-100">
-                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    </div>
-                    <h3 class="font-bold text-gray-800 text-lg leading-tight mb-1">Telur Ayam</h3>
-                    <p class="text-orange-600 font-extrabold text-lg mt-auto">Rp 28.000</p>
-                </div>
+            <div class="grid grid-cols-3 xl:grid-cols-4 gap-5" id="gridProduk"></div>
 
+            <p id="tidakKetemu" hidden class="text-center text-2xl text-slate-500 font-semibold mt-16">Barang tidak ditemukan.</p>
+
+            <div id="belumAdaBarang" hidden class="text-center mt-16">
+                <p class="text-2xl text-slate-600 font-bold mb-4">Belum ada barang yang didaftarkan.</p>
+                <a href="/produk" class="inline-block bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold px-6 py-4 rounded-xl">Tambah barang dulu</a>
             </div>
         </div>
     </div>
 
-    <div class="w-1/3 h-full flex flex-col bg-white">
-        <div class="p-4 bg-slate-800 text-white text-center shadow-md z-10 flex justify-between items-center">
-            <h2 class="text-xl font-bold tracking-wide">Daftar Belanja</h2>
-            <button onclick="kosongkanKeranjang()" class="text-red-400 hover:text-red-300 text-sm font-bold bg-slate-700 px-3 py-1 rounded">Kosongkan</button>
+    <!-- ================= KANAN: DAFTAR BELANJA ================= -->
+    <div id="panelKeranjang" class="w-1/3 h-full flex flex-col bg-white relative">
+        <div class="p-4 bg-slate-800 text-white shadow-md z-10 flex justify-between items-center">
+            <h2 class="text-2xl font-bold tracking-wide">Daftar Belanja</h2>
+            <button type="button" id="tombolKosongkan" class="text-red-200 hover:text-white text-base font-bold bg-slate-700 hover:bg-red-600 px-4 py-2 rounded-lg">Kosongkan</button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 bg-slate-50" id="area-struk">
-            <div class="hidden print:block text-center border-b-2 border-black pb-2 mb-2">
-                <h2 class="text-xl font-bold">WARUNGKU</h2>
-                <p class="text-xs border-t border-black mt-1 pt-1" id="waktuPrint"></p>
+        <div class="flex-1 overflow-y-auto p-4 bg-slate-50">
+            <div id="keranjangKosong" class="h-full flex flex-col items-center justify-center text-center text-slate-500 px-6">
+                <svg class="w-20 h-20 mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.3 2.3c-.6.6-.2 1.7.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <p class="text-2xl font-bold text-slate-600">Belum ada belanjaan</p>
+                <p class="text-lg mt-2">Klik gambar barang, atau seret gambarnya ke sini.</p>
             </div>
-            <ul id="daftarKeranjang" class="space-y-2"></ul>
-            <div class="hidden print:block border-t-2 border-dashed border-black mt-2 pt-2"></div>
+            <ul id="daftarKeranjang" class="space-y-3"></ul>
         </div>
 
         <div class="p-5 bg-white border-t border-gray-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-10">
             <div class="flex justify-between items-end mb-4">
-                <span class="text-xl font-bold text-gray-500">Total</span>
-                <span class="text-4xl font-extrabold text-green-600 tracking-tight" id="teksTotal">Rp 0</span>
+                <span class="text-xl font-bold text-gray-600" id="teksJumlah">Total</span>
+                <span class="text-4xl font-extrabold text-green-700 tracking-tight" id="teksTotal">Rp 0</span>
             </div>
-            
-            <button onclick="bayarDanPrint()" class="w-full bg-green-500 hover:bg-green-600 text-white font-extrabold py-4 rounded-xl text-2xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
+
+            <button type="button" id="tombolBayar" disabled
+                    class="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:text-slate-500 text-white font-extrabold py-4 rounded-xl text-2xl shadow-lg transition transform active:scale-95 flex items-center justify-center gap-2">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                BAYAR (Enter)
+                <span id="teksBayar">BAYAR (Enter)</span>
             </button>
+        </div>
+
+        <!-- Muncul selama gambar barang sedang diseret -->
+        <div id="zonaLepas" aria-hidden="true"
+             class="absolute inset-0 z-20 pointer-events-none flex flex-col items-center justify-center text-center gap-3 border-8 border-dashed border-blue-400 bg-blue-50/95 text-blue-800">
+            <svg class="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+            <p class="text-3xl font-extrabold px-6">Lepaskan gambar di sini</p>
         </div>
     </div>
 
+    <!-- Pesan singkat di atas layar (berhasil / gagal) -->
+    <div id="pesan" role="status" aria-live="polite" hidden
+         class="fixed top-5 left-1/2 -translate-x-1/2 z-[70] max-w-2xl px-7 py-4 rounded-2xl text-2xl font-bold shadow-2xl text-white text-center pointer-events-none"></div>
+
+    <!-- Struk untuk printer thermal 58 mm -->
+    <div id="strukCetak">
+        <div style="text-align:center; font-weight:bold; font-size:15px;">WARUNGKU</div>
+        <div id="strukInfo" style="text-align:center;"></div>
+        <div style="border-top:1px dashed #000; margin:4px 0;"></div>
+        <div id="strukIsi"></div>
+        <div style="border-top:1px dashed #000; margin:4px 0;"></div>
+        <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px;">
+            <span>TOTAL</span><span id="strukTotal"></span>
+        </div>
+        <div style="text-align:center; margin-top:8px;">Terima kasih</div>
+    </div>
+
+    <!-- Data barang dari database -->
+    <script id="dataBarang" type="application/json">{{ barang|tojson }}</script>
+
     <script>
-        let keranjang = [];
-        let totalHarga = 0;
+        // =====================================================================
+        // DATA
+        // =====================================================================
+        const BARANG = JSON.parse(document.getElementById('dataBarang').textContent);
+        const petaBarang = new Map(BARANG.map(b => [b.id, b]));
+        const BATAS_STOK_MENIPIS = 5;
 
-        function formatRupiah(angka) { return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka); }
+        let mode = 'Eceran';        // 'Eceran' atau 'Grosir'
+        let keranjang = [];         // isi: { id, qty }
+        let kataCari = '';
+        let sedangBayar = false;
 
-        function tambahItem(id, nama, harga) {
-            let itemSama = keranjang.find(item => item.id === id);
-            if (itemSama) { itemSama.qty += 1; } else { keranjang.push({ id: id, nama: nama, harga: harga, qty: 1 }); }
-            perbaruiLayarKeranjang();
+        const el = id => document.getElementById(id);
+        const grid = el('gridProduk');
+        const panelKeranjang = el('panelKeranjang');
+
+        // =====================================================================
+        // FUNGSI BANTU
+        // =====================================================================
+        function formatRupiah(angka) { return 'Rp ' + new Intl.NumberFormat('id-ID').format(angka); }
+
+        // Nama barang diketik oleh pengguna, jadi harus diamankan sebelum ditempel ke halaman
+        function aman(teks) {
+            return String(teks).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
         }
 
-        function perbaruiLayarKeranjang() {
-            const wadah = document.getElementById('daftarKeranjang');
-            const teksTotal = document.getElementById('teksTotal');
-            wadah.innerHTML = ''; totalHarga = 0;
+        function hargaBarang(b) {
+            if (mode === 'Grosir') return b.harga_grosir || b.harga_eceran;
+            return b.harga_eceran || b.harga_grosir;
+        }
 
-            keranjang.forEach((item, urutan) => {
-                let subtotal = item.harga * item.qty;
-                totalHarga += subtotal;
-                wadah.innerHTML += `
-                    <li class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-gray-100 print:shadow-none print:border-none print:p-0 print:mb-1">
-                        <div class="flex-1">
-                            <h4 class="font-bold text-gray-900 text-lg print:text-sm leading-tight">${item.nama}</h4>
-                            <p class="text-gray-500 font-medium text-base print:text-xs">${item.qty} x ${formatRupiah(item.harga)}</p>
+        // Barang tanpa foto diberi kotak berwarna berisi huruf depan namanya
+        const WARNA_KOTAK = ['bg-blue-100 text-blue-800', 'bg-orange-100 text-orange-800', 'bg-emerald-100 text-emerald-800',
+                             'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800', 'bg-amber-100 text-amber-900'];
+        function gambarBarang(b) {
+            if (b.gambar) return `<img src="${aman(b.gambar)}" alt="" draggable="false" class="w-full h-full object-cover">`;
+            const huruf = b.nama.trim().split(/\s+/).slice(0, 2).map(kata => kata[0].toUpperCase()).join('');
+            return `<div class="w-full h-full flex items-center justify-center font-extrabold text-4xl ${WARNA_KOTAK[b.id % WARNA_KOTAK.length]}">${aman(huruf)}</div>`;
+        }
+
+        let timerPesan;
+        function tampilkanPesan(teks, berhasil = true) {
+            const kotak = el('pesan');
+            kotak.textContent = teks;
+            kotak.classList.toggle('bg-green-700', berhasil);
+            kotak.classList.toggle('bg-red-700', !berhasil);
+            kotak.hidden = false;
+            clearTimeout(timerPesan);
+            timerPesan = setTimeout(() => { kotak.hidden = true; }, berhasil ? 3000 : 6000);
+        }
+
+        // =====================================================================
+        // DAFTAR BARANG (KIRI)
+        // =====================================================================
+        function labelStok(b) {
+            if (b.stok <= 0) return '<span class="absolute top-2 left-2 bg-red-700 text-white text-sm font-bold px-2 py-1 rounded-lg">✕ Stok habis</span>';
+            if (b.stok <= BATAS_STOK_MENIPIS) return `<span class="absolute top-2 left-2 bg-amber-300 text-amber-950 text-sm font-bold px-2 py-1 rounded-lg">! Sisa ${b.stok}</span>`;
+            return '';
+        }
+
+        function tampilkanBarang() {
+            const kata = kataCari.trim().toLowerCase();
+            const cocok = BARANG.filter(b => !kata || b.nama.toLowerCase().includes(kata) || b.barcode.includes(kata));
+
+            grid.innerHTML = cocok.map(b => `
+                <div class="kartu relative bg-white rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition transform border-2 border-gray-200 hover:border-blue-400 p-3 flex flex-col text-center focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400"
+                     role="button" tabindex="0" data-id="${b.id}" aria-label="Tambah ${aman(b.nama)}, ${formatRupiah(hargaBarang(b))}">
+                    <div class="aspect-square w-full rounded-xl overflow-hidden bg-slate-100 mb-3 pointer-events-none">${gambarBarang(b)}</div>
+                    ${labelStok(b)}
+                    <h3 class="font-bold text-gray-900 text-xl leading-tight mb-1">${aman(b.nama)}</h3>
+                    <p class="text-blue-800 font-extrabold text-2xl mt-auto">${formatRupiah(hargaBarang(b))}</p>
+                </div>
+            `).join('');
+
+            el('belumAdaBarang').hidden = BARANG.length > 0;
+            el('tidakKetemu').hidden = cocok.length > 0 || BARANG.length === 0;
+            return cocok;
+        }
+
+        // =====================================================================
+        // KERANJANG (KANAN)
+        // =====================================================================
+        function tambahItem(id) {
+            if (!petaBarang.has(id)) return;
+            const sama = keranjang.find(item => item.id === id);
+            if (sama) { sama.qty += 1; } else { keranjang.push({ id: id, qty: 1 }); }
+            tampilkanKeranjang(id);
+        }
+
+        function ubahJumlah(id, selisih) {
+            const item = keranjang.find(item => item.id === id);
+            if (!item) return;
+            item.qty += selisih;
+            if (item.qty < 1) keranjang = keranjang.filter(lain => lain.id !== id);
+            tampilkanKeranjang();
+        }
+
+        function hapusItem(id) { keranjang = keranjang.filter(item => item.id !== id); tampilkanKeranjang(); }
+        function kosongkanKeranjang() { keranjang = []; tampilkanKeranjang(); }
+
+        function tampilkanKeranjang(idBaruMasuk = null) {
+            let total = 0, jumlahBarang = 0;
+
+            el('daftarKeranjang').innerHTML = keranjang.map(item => {
+                const b = petaBarang.get(item.id);
+                const harga = hargaBarang(b);
+                const subtotal = harga * item.qty;
+                total += subtotal;
+                jumlahBarang += item.qty;
+                return `
+                    <li data-id="${b.id}" class="bg-white p-3 rounded-xl shadow-sm border border-gray-200 ${b.id === idBaruMasuk ? 'baru-masuk' : ''}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-14 h-14 rounded-lg overflow-hidden bg-slate-100 shrink-0 text-xs">${gambarBarang(b)}</div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-gray-900 text-lg leading-tight">${aman(b.nama)}</h4>
+                                <p class="text-gray-600 font-medium text-base">${item.qty} x ${formatRupiah(harga)}</p>
+                            </div>
+                            <p class="font-extrabold text-gray-900 text-xl whitespace-nowrap">${formatRupiah(subtotal)}</p>
                         </div>
-                        <div class="text-right">
-                            <p class="font-bold text-gray-900 text-lg print:text-sm mb-1">${formatRupiah(subtotal)}</p>
-                            <button onclick="hapusItem(${urutan})" class="text-red-500 text-xs font-bold bg-red-50 hover:bg-red-100 px-2 py-1 rounded no-print">Batal</button>
+                        <div class="flex items-center justify-between mt-3">
+                            <div class="flex items-center gap-2">
+                                <button type="button" data-aksi="kurang" aria-label="Kurangi ${aman(b.nama)}" class="w-12 h-12 rounded-xl bg-slate-200 hover:bg-slate-300 text-gray-900 text-3xl font-bold leading-none">−</button>
+                                <span class="w-12 text-center text-2xl font-extrabold text-gray-900">${item.qty}</span>
+                                <button type="button" data-aksi="tambah" aria-label="Tambah ${aman(b.nama)}" class="w-12 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-3xl font-bold leading-none">+</button>
+                            </div>
+                            <button type="button" data-aksi="hapus" class="h-12 px-4 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-base font-bold">Batal</button>
                         </div>
                     </li>
                 `;
+            }).join('');
+
+            el('keranjangKosong').hidden = keranjang.length > 0;
+            el('keranjangKosong').classList.toggle('flex', keranjang.length === 0);
+            el('teksTotal').innerText = formatRupiah(total);
+            el('teksJumlah').innerText = jumlahBarang > 0 ? `Total (${jumlahBarang} barang)` : 'Total';
+            el('tombolBayar').disabled = keranjang.length === 0 || sedangBayar;
+
+            // Pastikan barang yang baru masuk terlihat walau daftarnya panjang
+            if (idBaruMasuk !== null) {
+                const baris = el('daftarKeranjang').querySelector(`li[data-id="${idBaruMasuk}"]`);
+                if (baris) baris.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        el('daftarKeranjang').addEventListener('click', event => {
+            const tombol = event.target.closest('button[data-aksi]');
+            if (!tombol) return;
+            const id = Number(tombol.closest('li').dataset.id);
+            if (tombol.dataset.aksi === 'tambah') ubahJumlah(id, 1);
+            if (tombol.dataset.aksi === 'kurang') ubahJumlah(id, -1);
+            if (tombol.dataset.aksi === 'hapus') hapusItem(id);
+        });
+        el('tombolKosongkan').addEventListener('click', kosongkanKeranjang);
+
+        // =====================================================================
+        // KLIK DAN SERET GAMBAR BARANG
+        // Klik gambar        -> barang masuk keranjang.
+        // Seret ke kanan     -> gambar ikut bergerak, lepaskan di daftar belanja.
+        // Memakai Pointer Events supaya sama untuk mouse maupun layar sentuh.
+        // =====================================================================
+        const JARAK_MULAI_SERET = 14;   // piksel; di bawah ini dianggap klik biasa (tangan sedikit goyang)
+        let seret = null;               // { id, kartu, x0, y0, aktif, bayangan, pointerId }
+
+        function diAtasKeranjang(x, y) {
+            const kotak = panelKeranjang.getBoundingClientRect();
+            return x >= kotak.left && x <= kotak.right && y >= kotak.top && y <= kotak.bottom;
+        }
+
+        function akhiriSeret() {
+            if (!seret) return;
+            if (seret.bayangan) seret.bayangan.remove();
+            seret.kartu.classList.remove('diangkat');
+            document.body.classList.remove('sedang-seret');
+            el('zonaLepas').classList.remove('di-atas');
+            seret = null;
+        }
+
+        grid.addEventListener('pointerdown', event => {
+            const kartu = event.target.closest('.kartu');
+            if (!kartu || event.button !== 0) return;
+            seret = { id: Number(kartu.dataset.id), kartu: kartu, x0: event.clientX, y0: event.clientY,
+                      aktif: false, bayangan: null, pointerId: event.pointerId };
+        });
+
+        window.addEventListener('pointermove', event => {
+            if (!seret || event.pointerId !== seret.pointerId) return;
+
+            if (!seret.aktif) {
+                if (Math.hypot(event.clientX - seret.x0, event.clientY - seret.y0) < JARAK_MULAI_SERET) return;
+                // Mulai menyeret: buat salinan gambar yang mengikuti penunjuk
+                seret.aktif = true;
+                seret.bayangan = document.createElement('div');
+                seret.bayangan.id = 'bayangan';
+                seret.bayangan.innerHTML = gambarBarang(petaBarang.get(seret.id));
+                document.body.appendChild(seret.bayangan);
+                seret.kartu.classList.add('diangkat');
+                document.body.classList.add('sedang-seret');
+            }
+
+            seret.bayangan.style.left = event.clientX + 'px';
+            seret.bayangan.style.top = event.clientY + 'px';
+            el('zonaLepas').classList.toggle('di-atas', diAtasKeranjang(event.clientX, event.clientY));
+        });
+
+        window.addEventListener('pointerup', event => {
+            if (!seret || event.pointerId !== seret.pointerId) return;
+            const dilepasDiKeranjang = seret.aktif && diAtasKeranjang(event.clientX, event.clientY);
+            const id = seret.id;
+            seret.kartu.blur();   // supaya tombol Enter setelah ini tetap berarti BAYAR
+            akhiriSeret();
+            if (dilepasDiKeranjang) tambahItem(id);
+        });
+        window.addEventListener('pointercancel', akhiriSeret);
+        window.addEventListener('blur', akhiriSeret);
+
+        // Klik menambah barang. Seret yang dilepas di luar kartu asal tidak menghasilkan "click", jadi tidak dobel.
+        // (Enter/Spasi saat kartu dipilih lewat keyboard ditangani di bagian KEYBOARD di bawah.)
+        grid.addEventListener('click', event => {
+            const kartu = event.target.closest('.kartu');
+            if (kartu) tambahItem(Number(kartu.dataset.id));
+        });
+        grid.addEventListener('dragstart', event => event.preventDefault());
+
+        // Setelah klik mouse, lepaskan fokus dari tombol supaya tombol Enter tetap berarti BAYAR
+        document.addEventListener('click', event => {
+            const tombol = event.target.closest('button, [role="button"]');
+            if (tombol && event.detail > 0) tombol.blur();
+        });
+
+        // =====================================================================
+        // CARI BARANG + PILIHAN ECERAN / GROSIR
+        // =====================================================================
+        el('kolomCari').addEventListener('input', event => { kataCari = event.target.value; tampilkanBarang(); });
+
+        function pilihDariPencarian() {
+            const kata = kataCari.trim();
+            if (!kata) return;
+            const cocok = tampilkanBarang();
+            const barang = BARANG.find(b => b.barcode && b.barcode === kata) || cocok[0];
+            if (!barang) { tampilkanPesan(`"${kata}" tidak ditemukan.`, false); return; }
+            tambahItem(barang.id);
+            el('kolomCari').value = ''; kataCari = '';
+            tampilkanBarang();
+        }
+
+        function aturMode(modeBaru) {
+            mode = modeBaru;
+            document.querySelectorAll('.tombol-mode').forEach(tombol => {
+                const dipilih = tombol.dataset.mode === mode;
+                tombol.setAttribute('aria-pressed', dipilih);
+                tombol.classList.toggle('bg-white', dipilih);
+                tombol.classList.toggle('text-blue-900', dipilih);
+                tombol.classList.toggle('text-blue-100', !dipilih);
             });
-            teksTotal.innerText = formatRupiah(totalHarga);
+            tampilkanBarang();
+            tampilkanKeranjang();
+        }
+        document.querySelectorAll('.tombol-mode').forEach(tombol => tombol.addEventListener('click', () => aturMode(tombol.dataset.mode)));
+
+        // =====================================================================
+        // BAYAR: simpan ke database, lalu cetak struk
+        // =====================================================================
+        function isiStruk(hasil) {
+            const angka = n => new Intl.NumberFormat('id-ID').format(n);
+            el('strukInfo').textContent = `No. ${hasil.id_penjualan} | ${hasil.waktu} | ${hasil.tipe}`;
+            el('strukIsi').innerHTML = hasil.items.map(item => `
+                <div>${aman(item.nama)}</div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span>&nbsp;&nbsp;${item.jumlah} x ${angka(item.harga_satuan)}</span><span>${angka(item.subtotal)}</span>
+                </div>
+            `).join('');
+            el('strukTotal').textContent = formatRupiah(hasil.total);
         }
 
-        function hapusItem(urutan) { keranjang.splice(urutan, 1); perbaruiLayarKeranjang(); }
-        function kosongkanKeranjang() { keranjang = []; perbaruiLayarKeranjang(); }
+        async function bayarDanPrint() {
+            if (keranjang.length === 0 || sedangBayar) return;
+            sedangBayar = true;
+            el('tombolBayar').disabled = true;
+            el('teksBayar').textContent = 'Menyimpan...';
 
-        function bayarDanPrint() {
-            if (keranjang.length === 0) return;
-            document.getElementById('waktuPrint').innerText = new Date().toLocaleString('id-ID');
-            window.print(); 
-            kosongkanKeranjang(); 
+            try {
+                const jawaban = await fetch('/api/penjualan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tipe: mode, items: keranjang.map(item => ({ id_barang: item.id, jumlah: item.qty })) }),
+                });
+                if (jawaban.status === 401) { window.location.href = '/'; return; }
+                const hasil = await jawaban.json().catch(() => null);
+                if (!jawaban.ok || !hasil || !hasil.ok) throw new Error((hasil && hasil.pesan) || 'Transaksi gagal disimpan.');
+
+                // Berhasil: perbarui stok di layar, kosongkan keranjang, cetak struk
+                Object.entries(hasil.stok).forEach(([id, stok]) => { petaBarang.get(Number(id)).stok = stok; });
+                isiStruk(hasil);
+                keranjang = [];
+                tampilkanBarang();
+                tampilkanPesan(`Tersimpan. Total ${formatRupiah(hasil.total)}`);
+                setTimeout(() => window.print(), 100);
+            } catch (galat) {
+                // Keranjang sengaja TIDAK dikosongkan supaya bisa dicoba lagi
+                const pesan = galat instanceof TypeError ? 'Tidak ada sambungan internet. Belanjaan belum tersimpan, coba tekan BAYAR lagi.' : galat.message;
+                tampilkanPesan(pesan, false);
+            } finally {
+                sedangBayar = false;
+                el('teksBayar').textContent = 'BAYAR (Enter)';
+                tampilkanKeranjang();
+            }
         }
+        el('tombolBayar').addEventListener('click', bayarDanPrint);
 
-        // Scanner Barcode (Mendeteksi input cepat yang diakhiri 'Enter')
+        // =====================================================================
+        // KEYBOARD: Scanner barcode + tombol Enter untuk bayar
+        // Scanner bekerja seperti keyboard yang mengetik sangat cepat lalu menekan Enter.
+        // =====================================================================
         let rekamanBarcode = '';
         let timerJeda;
-        document.addEventListener('keydown', function(event) {
-            if (document.activeElement.id === 'kolomCari') return;
-            if (event.key === 'Enter') {
+        document.addEventListener('keydown', function (event) {
+            const diKolomCari = document.activeElement === el('kolomCari');
+            // Kartu barang yang sedang dipilih lewat tombol Tab (bukan lewat mouse)
+            const kartuTerpilih = document.activeElement && document.activeElement.classList.contains('kartu') ? document.activeElement : null;
+
+            if (event.key === 'Escape') { akhiriSeret(); return; }
+
+            if (event.key === ' ' && kartuTerpilih) {
                 event.preventDefault();
+                tambahItem(Number(kartuTerpilih.dataset.id));
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                if (diKolomCari) { event.preventDefault(); pilihDariPencarian(); return; }
+
                 if (rekamanBarcode.length > 4) {
-                    console.log("Scanner menangkap:", rekamanBarcode);
-                    tambahItem('B001', 'Kecap Bango', 25000); // Simulasi
-                    rekamanBarcode = ''; 
-                } else if (keranjang.length > 0) {
-                    bayarDanPrint();
+                    event.preventDefault();
+                    const barang = BARANG.find(b => b.barcode === rekamanBarcode);
+                    if (barang) { tambahItem(barang.id); }
+                    else { tampilkanPesan(`Barcode ${rekamanBarcode} belum terdaftar.`, false); }
+                    rekamanBarcode = '';
+                    return;
                 }
-            } else {
+                rekamanBarcode = '';
+
+                if (kartuTerpilih) { event.preventDefault(); tambahItem(Number(kartuTerpilih.dataset.id)); return; }
+                // Kalau ada tombol lain yang sedang terpilih lewat keyboard, biarkan tombol itu yang bekerja
+                if (document.activeElement && document.activeElement !== document.body) return;
+                if (keranjang.length > 0) { event.preventDefault(); bayarDanPrint(); }
+                return;
+            }
+
+            if (diKolomCari) return;
+            if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
                 rekamanBarcode += event.key;
                 clearTimeout(timerJeda);
-                timerJeda = setTimeout(() => { rekamanBarcode = ''; }, 50); 
+                timerJeda = setTimeout(() => { rekamanBarcode = ''; }, 80);
             }
         });
+
+        // Tampilan awal
+        aturMode('Eceran');
     </script>
 </body>
 </html>

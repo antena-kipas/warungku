@@ -1,130 +1,321 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Warungku</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
-</head>
-<body class="bg-gray-100 h-screen overflow-hidden flex">
+{% extends 'base.html' %}
+{% block judul %}Dashboard - Warungku{% endblock %}
 
-    <aside class="w-56 bg-slate-900 text-white flex flex-col h-full shadow-2xl z-20">
-        <div class="p-6 flex items-center justify-center border-b border-slate-700">
-            <div class="text-2xl font-extrabold tracking-wider text-blue-400">WARUNGKU</div>
+{% block kepala %}
+<style>
+    /* Warna grafik */
+    .dasbor {
+        --seri: #2a78d6;        /* warna batang */
+        --tinta: #0b0b0b;
+        --tinta-2: #52514e;
+        --tinta-redup: #6f6d68;
+        --garis: #e1e0d9;
+        --sumbu: #c3c2b7;
+    }
+
+    /* ---------- Grafik kolom (batang tegak) ---------- */
+    .grafik { position: relative; padding-left: 56px; }
+    .grafik-plot { position: relative; height: 200px; border-bottom: 1px solid var(--sumbu); }
+    .garis { position: absolute; left: 0; right: 0; border-top: 1px solid var(--garis); }
+    .garis span {
+        position: absolute; left: -56px; top: -9px; width: 48px; text-align: right;
+        font-size: 13px; color: var(--tinta-redup); font-variant-numeric: tabular-nums;
+    }
+    .kolom-wadah { position: absolute; inset: 0; display: flex; }
+    .kolom { position: relative; flex: 1; display: flex; align-items: flex-end; justify-content: center; outline: none; }
+    .kolom:hover, .kolom:focus-visible { background: rgba(11, 11, 11, .05); }
+    .batang { width: 62%; max-width: 24px; background: var(--seri); border-radius: 4px 4px 0 0; }
+    .label-puncak {
+        position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap;
+        font-size: 13px; font-weight: 700; color: var(--tinta); pointer-events: none;
+    }
+    .sumbu-x { display: flex; }
+    .sumbu-x span { flex: 1; text-align: center; padding-top: 6px; font-size: 13px; color: var(--tinta-2); font-variant-numeric: tabular-nums; }
+    .sumbu-x span.tebal { font-weight: 700; color: var(--tinta); }
+
+    /* Keterangan yang muncul saat kolom ditunjuk mouse / dipilih keyboard */
+    .tip {
+        display: none; position: absolute; z-index: 5; left: 50%; transform: translateX(-50%);
+        background: #1e293b; color: #fff; padding: 8px 12px; border-radius: 10px;
+        font-size: 14px; line-height: 1.35; white-space: nowrap; pointer-events: none; text-align: left;
+    }
+    .tip b { display: block; font-size: 16px; }
+    .tip.kiri { left: 0; transform: none; }
+    .tip.kanan { left: auto; right: 0; transform: none; }
+    .kolom:hover .tip, .kolom:focus-visible .tip { display: block; }
+
+    /* ---------- Batang mendatar (barang terlaris) ---------- */
+    .peringkat { display: grid; grid-template-columns: minmax(0, 42%) 1fr; align-items: center; column-gap: 12px; row-gap: 14px; }
+    .peringkat .nama { font-size: 16px; font-weight: 600; color: var(--tinta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .peringkat .trek { display: flex; align-items: center; gap: 8px; }
+    .peringkat .isi { height: 18px; background: var(--seri); border-radius: 0 4px 4px 0; min-width: 2px; }
+    .peringkat .nilai { font-size: 15px; font-weight: 700; color: var(--tinta); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+    details.tabel-angka summary { cursor: pointer; font-size: 14px; color: var(--tinta-2); margin-top: 12px; }
+    details.tabel-angka table { margin-top: 8px; font-size: 14px; font-variant-numeric: tabular-nums; }
+    details.tabel-angka td, details.tabel-angka th { padding: 3px 16px 3px 0; text-align: left; }
+</style>
+{% endblock %}
+
+{% block isi %}
+<div class="dasbor">
+    <header class="mb-6 flex flex-wrap justify-between items-end gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Ringkasan Hari Ini</h1>
+            <p class="text-gray-600 mt-1 text-lg" id="teksTanggal"></p>
         </div>
-        
-        <nav class="flex-1 px-4 py-6 space-y-2">
-            <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                Dashboard
-            </a>
-            
-            <a href="/transaksi" class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                Buka Kasir
-            </a>
-
-            <a href="/produk" class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-xl font-medium transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                Data Barang
-            </a>
-        </nav>
-
-        <div class="p-4 border-t border-slate-700">
-            <a href="/logout" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                Keluar
-            </a>
+        <div class="flex items-center gap-4">
+            <p class="text-sm text-gray-600" role="status">
+                <span id="titikStatus" class="inline-block w-2.5 h-2.5 rounded-full bg-green-600 mr-1 align-middle"></span>
+                <span id="teksStatus"></span>
+            </p>
+            <a href="/transaksi" class="bg-green-600 hover:bg-green-700 text-white text-xl font-extrabold px-6 py-3 rounded-xl shadow-lg">Buka Kasir</a>
         </div>
-    </aside>
+    </header>
 
-    <main class="flex-1 overflow-y-auto p-8 relative">
-        <header class="mb-8 flex justify-between items-end">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Ringkasan Hari Ini</h1>
-                <p class="text-gray-500 mt-1">Selamat datang kembali! Ini adalah performa warungmu.</p>
-            </div>
-            <div class="text-right">
-                <p class="text-sm font-semibold text-gray-400 uppercase tracking-wide">Tanggal</p>
-                <p class="text-xl font-bold text-gray-700">{{ tanggal }}</p>
-            </div>
-        </header>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-5">
-                <div class="p-4 bg-green-100 text-green-600 rounded-xl">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Pendapatan (Kotor)</p>
-                    <h3 class="text-2xl font-extrabold text-gray-800">Rp {{ "{:,.0f}".format(pendapatan).replace(',', '.') }}</h3>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-5">
-                <div class="p-4 bg-blue-100 text-blue-600 rounded-xl">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Total Transaksi</p>
-                    <h3 class="text-2xl font-extrabold text-gray-800">{{ total_transaksi }} Struk</h3>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center gap-5">
-                <div class="p-4 bg-orange-100 text-orange-600 rounded-xl">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>
-                </div>
-                <div>
-                    <p class="text-sm font-medium text-gray-500">Barang Terlaris</p>
-                    <h3 class="text-2xl font-extrabold text-gray-800">{{ barang_terlaris }}</h3>
-                </div>
-            </div>
+    <!-- ANGKA UTAMA -->
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+            <p class="text-base font-medium text-gray-600">Pendapatan hari ini</p>
+            <p class="text-3xl font-extrabold text-gray-900 mt-1" id="angkaPendapatan"></p>
+            <p class="text-sm mt-1 font-semibold" id="teksSelisih"></p>
         </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+            <p class="text-base font-medium text-gray-600">Untung hari ini</p>
+            <p class="text-3xl font-extrabold text-gray-900 mt-1" id="angkaUntung"></p>
+            <p class="text-sm text-gray-600 mt-1">harga jual dikurangi harga modal</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+            <p class="text-base font-medium text-gray-600">Jumlah transaksi</p>
+            <p class="text-3xl font-extrabold text-gray-900 mt-1" id="angkaTransaksi"></p>
+            <p class="text-sm text-gray-600 mt-1" id="teksBarangTerjual"></p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+            <p class="text-base font-medium text-gray-600">Stok perlu dibeli</p>
+            <p class="text-3xl font-extrabold text-gray-900 mt-1" id="angkaStok"></p>
+            <p class="text-sm text-gray-600 mt-1" id="teksJumlahBarang"></p>
+        </div>
+    </div>
 
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-5 border-b border-gray-100">
-                <h2 class="text-lg font-bold text-gray-800">5 Transaksi Terakhir</h2>
+    <!-- GRAFIK -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-6">
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">Pendapatan 7 hari terakhir</h2>
+            <p class="text-sm text-gray-600 mb-5">Rupiah per hari</p>
+            <div id="grafikHarian"></div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">Barang terlaris</h2>
+            <p class="text-sm text-gray-600 mb-5">Jumlah terjual dalam 7 hari terakhir</p>
+            <div id="daftarTerlaris"></div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">Jam ramai pembeli</h2>
+            <p class="text-sm text-gray-600 mb-5">Jumlah transaksi per jam, gabungan 7 hari terakhir</p>
+            <div id="grafikJam"></div>
+        </section>
+
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">Stok menipis</h2>
+                    <p class="text-sm text-gray-600">Barang dengan sisa 5 atau kurang</p>
+                </div>
+                <a href="/produk" class="text-blue-700 hover:underline font-semibold">Kelola barang</a>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 text-gray-500 text-sm border-b border-gray-100">
-                            <th class="p-4 font-medium">Waktu</th>
-                            <th class="p-4 font-medium">Tipe</th>
-                            <th class="p-4 font-medium">Total Belanja</th>
-                            <th class="p-4 font-medium">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-700">
-                        {% for t in transaksi_terakhir %}
-                        <tr class="border-b border-gray-50 hover:bg-slate-50">
-                            <!-- Mengambil format waktu jam:menit dari format DATETIME SQLite -->
-                            <td class="p-4 text-sm">{{ t['waktu_transaksi'][11:16] }} WIB</td>
-                            <td class="p-4">
-                                {% if t['tipe_penjualan'] == 'Eceran' %}
-                                    <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold">Eceran</span>
-                                {% else %}
-                                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-bold">Grosir</span>
-                                {% endif %}
-                            </td>
-                            <td class="p-4 font-bold">Rp {{ "{:,.0f}".format(t['total_belanja']).replace(',', '.') }}</td>
-                            <td class="p-4"><span class="text-green-500 font-bold text-sm">✓ Lunas</span></td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="p-4 text-center text-sm text-gray-500">Belum ada transaksi hari ini.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+            <ul id="daftarStok" class="divide-y divide-gray-100"></ul>
+        </section>
+    </div>
+
+    <!-- TRANSAKSI TERAKHIR -->
+    <section class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-900">Transaksi terakhir</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-50 text-gray-600 text-sm border-b border-gray-200">
+                        <th class="px-6 py-3 font-semibold">No. struk</th>
+                        <th class="px-6 py-3 font-semibold">Waktu</th>
+                        <th class="px-6 py-3 font-semibold">Tipe</th>
+                        <th class="px-6 py-3 font-semibold text-right">Jumlah barang</th>
+                        <th class="px-6 py-3 font-semibold text-right">Total belanja</th>
+                    </tr>
+                </thead>
+                <tbody id="barisTransaksi" class="text-gray-800 text-base"></tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+<script id="dataAwal" type="application/json">{{ data|tojson }}</script>
+{% endblock %}
+
+{% block skrip %}
+<script>
+    const el = id => document.getElementById(id);
+    const angka = n => new Intl.NumberFormat('id-ID').format(n);
+    const rupiah = n => 'Rp ' + angka(n);
+    const aman = teks => String(teks).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // 1.250.000 -> "1,25 jt", 50.000 -> "50 rb" (untuk angka di sumbu grafik)
+    function ringkas(n) {
+        if (n >= 1e6) return (n / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + ' jt';
+        if (n >= 1e3) return (n / 1e3).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' rb';
+        return angka(n);
+    }
+
+    // Mencari angka bulat yang enak dibaca untuk garis-garis sumbu tegak (kelipatan 1, 2, atau 5)
+    function skalaRapi(nilaiTerbesar) {
+        if (nilaiTerbesar <= 0) return { maks: 1, langkah: 1 };
+        const kasar = nilaiTerbesar / 4;
+        const pangkat = Math.pow(10, Math.floor(Math.log10(kasar)));
+        const langkah = Math.max(1, [1, 2, 5, 10].map(k => k * pangkat).find(calon => calon >= kasar));
+        return { maks: Math.ceil(nilaiTerbesar / langkah) * langkah, langkah: langkah };
+    }
+
+    // Menggambar grafik kolom dari daftar titik: { label, nilai, judulTip, teksTip, tebal, labelPuncak }
+    function gambarKolom(wadah, titik, opsi) {
+        const skala = skalaRapi(Math.max(...titik.map(t => t.nilai)));
+        const persen = nilai => (nilai / skala.maks) * 100;
+
+        let garis = '';
+        for (let nilai = skala.langkah; nilai <= skala.maks; nilai += skala.langkah) {
+            garis += `<div class="garis" style="bottom:${persen(nilai)}%"><span>${opsi.formatSumbu(nilai)}</span></div>`;
+        }
+
+        const kolom = titik.map((t, i) => {
+            const posisiTip = i < 2 ? 'kiri' : (i >= titik.length - 2 ? 'kanan' : '');
+            const tinggi = persen(t.nilai);
+            return `
+                <div class="kolom" tabindex="0" aria-label="${aman(t.judulTip)}: ${aman(t.teksTip)}">
+                    ${t.labelPuncak ? `<span class="label-puncak" style="bottom:calc(${tinggi}% + 4px)">${aman(t.labelPuncak)}</span>` : ''}
+                    <div class="batang" style="height:${tinggi}%; ${t.nilai > 0 ? 'min-height:2px' : ''}"></div>
+                    <div class="tip ${posisiTip}" style="bottom:calc(${tinggi}% + 26px)"><b>${aman(t.teksTip)}</b>${aman(t.judulTip)}</div>
+                </div>`;
+        }).join('');
+
+        wadah.innerHTML = `
+            <div class="grafik">
+                <div class="grafik-plot">${garis}<div class="kolom-wadah">${kolom}</div></div>
+                <div class="sumbu-x">${titik.map(t => `<span class="${t.tebal ? 'tebal' : ''}">${aman(t.label)}</span>`).join('')}</div>
+            </div>
+            <details class="tabel-angka">
+                <summary>Lihat angkanya dalam tabel</summary>
+                <table>
+                    <tr><th>${aman(opsi.judulKolom[0])}</th><th>${aman(opsi.judulKolom[1])}</th></tr>
+                    ${titik.map(t => `<tr><td>${aman(t.judulTip)}</td><td>${aman(t.teksTip)}</td></tr>`).join('')}
                 </table>
-            </div>
-        </div>
+            </details>`;
+    }
 
-    </main>
-</body>
-</html>
+    function tampilkan(data) {
+        el('teksTanggal').textContent = data.tanggal;
+
+        // --- Angka utama ---
+        el('angkaPendapatan').textContent = rupiah(data.hari_ini.pendapatan);
+        el('angkaUntung').textContent = rupiah(data.hari_ini.untung);
+        el('angkaTransaksi').textContent = angka(data.hari_ini.transaksi) + ' struk';
+        el('teksBarangTerjual').textContent = angka(data.hari_ini.barang_terjual) + ' barang terjual';
+        el('angkaStok').textContent = angka(data.jumlah_stok_menipis) + ' barang';
+        el('teksJumlahBarang').textContent = 'dari ' + angka(data.jumlah_barang) + ' barang terdaftar';
+
+        const selisih = el('teksSelisih');
+        if (data.selisih_persen === null) {
+            selisih.textContent = 'belum ada pembanding dari kemarin';
+            selisih.style.color = '#52514e';
+        } else {
+            const naik = data.selisih_persen >= 0;
+            selisih.textContent = `${naik ? '▲ naik' : '▼ turun'} ${Math.abs(data.selisih_persen)}% dibanding kemarin jam segini`;
+            selisih.style.color = naik ? '#006300' : '#b42318';
+        }
+
+        // --- Pendapatan 7 hari ---
+        gambarKolom(el('grafikHarian'), data.per_hari.map((h, i) => ({
+            label: h.label,
+            nilai: h.pendapatan,
+            judulTip: h.keterangan,
+            teksTip: `${rupiah(h.pendapatan)} (${h.transaksi} struk)`,
+            tebal: i === data.per_hari.length - 1,
+            labelPuncak: i === data.per_hari.length - 1 ? ringkas(h.pendapatan) : '',
+        })), { formatSumbu: ringkas, judulKolom: ['Hari', 'Pendapatan'] });
+
+        // --- Jam ramai ---
+        gambarKolom(el('grafikJam'), data.per_jam.map(j => ({
+            label: String(j.jam).padStart(2, '0'),
+            nilai: j.transaksi,
+            judulTip: `Jam ${String(j.jam).padStart(2, '0')}.00 - ${String(j.jam).padStart(2, '0')}.59`,
+            teksTip: `${j.transaksi} transaksi`,
+        })), { formatSumbu: angka, judulKolom: ['Jam', 'Transaksi'] });
+
+        // --- Barang terlaris ---
+        if (data.terlaris.length === 0) {
+            el('daftarTerlaris').innerHTML = '<p class="text-gray-600 text-lg py-8 text-center">Belum ada penjualan dalam 7 hari terakhir.</p>';
+        } else {
+            const terbanyak = data.terlaris[0].jumlah;
+            el('daftarTerlaris').innerHTML = '<div class="peringkat">' + data.terlaris.map(b => `
+                <div class="nama" title="${aman(b.nama)}">${aman(b.nama)}</div>
+                <div class="trek" title="${aman(b.nama)}: ${angka(b.jumlah)} terjual, ${rupiah(b.pendapatan)}">
+                    <div class="isi" style="width:${(b.jumlah / terbanyak) * 78}%"></div>
+                    <span class="nilai">${angka(b.jumlah)}</span>
+                </div>`).join('') + '</div>';
+        }
+
+        // --- Stok menipis ---
+        if (data.stok_menipis.length === 0) {
+            el('daftarStok').innerHTML = '<li class="text-gray-600 text-lg py-8 text-center">Semua stok masih aman.</li>';
+        } else {
+            let isi = data.stok_menipis.map(b => `
+                <li class="flex items-center justify-between py-3">
+                    <span class="text-lg font-semibold text-gray-900">${aman(b.nama)}</span>
+                    ${b.stok <= 0
+                        ? '<span class="px-3 py-1 rounded-lg bg-red-100 text-red-800 font-bold whitespace-nowrap">✕ Habis</span>'
+                        : `<span class="px-3 py-1 rounded-lg bg-amber-100 text-amber-900 font-bold whitespace-nowrap">! Sisa ${angka(b.stok)}</span>`}
+                </li>`).join('');
+            const sisanya = data.jumlah_stok_menipis - data.stok_menipis.length;
+            if (sisanya > 0) isi += `<li class="py-3 text-gray-600">dan ${angka(sisanya)} barang lainnya</li>`;
+            el('daftarStok').innerHTML = isi;
+        }
+
+        // --- Transaksi terakhir ---
+        if (data.transaksi_terakhir.length === 0) {
+            el('barisTransaksi').innerHTML = '<tr><td colspan="5" class="px-6 py-8 text-center text-gray-600 text-lg">Belum ada transaksi.</td></tr>';
+        } else {
+            el('barisTransaksi').innerHTML = data.transaksi_terakhir.map(t => `
+                <tr class="border-b border-gray-100 hover:bg-slate-50">
+                    <td class="px-6 py-3 font-mono">#${t.id}</td>
+                    <td class="px-6 py-3">${aman(t.tanggal)}, ${aman(t.jam)}</td>
+                    <td class="px-6 py-3">
+                        <span class="px-3 py-1 rounded-full text-sm font-bold ${t.tipe === 'Grosir' ? 'bg-yellow-100 text-yellow-900' : 'bg-purple-100 text-purple-800'}">${aman(t.tipe)}</span>
+                    </td>
+                    <td class="px-6 py-3 text-right tabular-nums">${angka(t.jumlah_barang)}</td>
+                    <td class="px-6 py-3 text-right font-bold tabular-nums">${rupiah(t.total)}</td>
+                </tr>`).join('');
+        }
+
+        el('teksStatus').textContent = `Diperbarui ${data.diperbarui}, otomatis tiap 15 detik`;
+        el('titikStatus').className = 'inline-block w-2.5 h-2.5 rounded-full bg-green-600 mr-1 align-middle';
+    }
+
+    // Ambil data terbaru dari server tanpa memuat ulang halaman
+    async function perbarui() {
+        if (document.hidden) return;   // tidak perlu bekerja kalau tab sedang tidak dilihat
+        try {
+            const jawaban = await fetch('/api/dashboard');
+            if (jawaban.status === 401) { window.location.href = '/'; return; }
+            if (!jawaban.ok) throw new Error('server');
+            tampilkan(await jawaban.json());
+        } catch (galat) {
+            el('teksStatus').textContent = 'Sambungan terputus, mencoba lagi...';
+            el('titikStatus').className = 'inline-block w-2.5 h-2.5 rounded-full bg-red-600 mr-1 align-middle';
+        }
+    }
+
+    tampilkan(JSON.parse(el('dataAwal').textContent));
+    setInterval(perbarui, 15000);
+    document.addEventListener('visibilitychange', perbarui);
+</script>
+{% endblock %}

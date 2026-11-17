@@ -1,29 +1,48 @@
-import sqlite3
+"""Menyiapkan database: membuat semua tabel dan akun login pertama.
+
+Cara pakai:
+    python init_db.py            -> membuat tabel yang belum ada (aman dijalankan berulang kali)
+    python init_db.py --reset    -> MENGHAPUS SEMUA DATA lalu membuat tabel dari nol
+
+Username dan password akun pertama bisa diatur lewat ADMIN_USERNAME dan ADMIN_PASSWORD di .env.
+"""
+import os
+import sys
+
 from werkzeug.security import generate_password_hash
 
-# 1. Buka koneksi ke database
-conn = sqlite3.connect('kasir.db')
+from app import app
+from database import db, User
 
-# 2. Buka dan baca file schema.sql
-with open('schema.sql') as f:
-    conn.executescript(f.read())
+reset = '--reset' in sys.argv
 
-# 3. Buat cursor untuk mengeksekusi perintah SQL
-cur = conn.cursor()
+with app.app_context():
+    if reset:
+        db.drop_all()
+        print('Semua tabel lama dihapus.')
 
-# 4. Buat akun pertama (Akun Admin/Kasir Nenek)
-# Kita akan buatkan username 'admin' dengan password 'rahasia'
-password_asli = 'password'
-password_acak = generate_password_hash(password_asli)
+    # 1. Buat semua tabel yang didefinisikan di database.py
+    db.create_all()
 
-cur.execute(
-    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
-    ('warungku', password_acak, 'admin')
-)
+    # 2. Buat akun pertama (akun kasir nenek) kalau belum ada
+    username = os.getenv('ADMIN_USERNAME', 'warungku')
+    password_asli = os.getenv('ADMIN_PASSWORD', 'password')
 
-# 5. Simpan (Commit) dan tutup koneksi
-conn.commit()
-conn.close()
+    if User.query.filter_by(username=username).first():
+        print(f"Akun '{username}' sudah ada, tidak dibuat ulang.")
+    else:
+        db.session.add(User(
+            username=username,
+            password=generate_password_hash(password_asli),
+            role='admin',
+        ))
+        db.session.commit()
+        print(f"Akun berhasil ditambahkan -> Username: {username}")
+        if password_asli == 'password':
+            print("PERINGATAN: password masih bawaan ('password'). Ganti lewat ADMIN_PASSWORD sebelum aplikasi dipakai online.")
 
-print("Database 'kasir.db' berhasil dibuat beserta tabel-tabelnya!")
-print(f"Akun berhasil ditambahkan -> Username: admin | Password: {password_asli}")
+    alamat = db.engine.url
+    if alamat.get_backend_name() == 'sqlite':
+        print(f"Database siap dipakai: SQLite di {alamat.database}")
+    else:
+        print(f"Database siap dipakai: {alamat.get_backend_name()} di {alamat.host}/{alamat.database}")

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import check_password_hash
-from database import get_db_connection # Mengimpor fungsi koneksi dari file database.py
+from database import User
 
 # Membuat blueprint bernama 'auth'
 auth_bp = Blueprint('auth', __name__)
@@ -8,32 +8,25 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/')
 def index():
     # Jika sudah login, langsung arahkan ke dashboard kasir
-    if 'logged_in' in session and session['logged_in']:
+    if session.get('logged_in'):
         return redirect(url_for('kasir.dashboard'))
     return render_template('index.html')
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
-    username = request.form['username']
-    password_yang_diketik = request.form['password']
+    username = request.form.get('username', '').strip()
+    password_yang_diketik = request.form.get('password', '')
 
-    # 1. Buka koneksi ke database SQLite
-    conn = get_db_connection()
-    
-    # 2. Cari data pengguna berdasarkan username
-    # Kita menggunakan parameter '?' untuk mencegah serangan SQL Injection
-    user = conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-    conn.close()
+    # 1. Cari data pengguna berdasarkan username
+    user = User.query.filter_by(username=username).first()
 
-    # 3. Validasi Login
+    # 2. Validasi Login
     # Cek apakah user ditemukan di database DAN apakah password yang diketik cocok dengan acakan (hash)
-    if user and check_password_hash(user['password'], password_yang_diketik):
+    if user and check_password_hash(user.password, password_yang_diketik):
         # Jika cocok, buat sesi login
         session['logged_in'] = True
-        session['username'] = user['username'] 
-        session['role'] = user['role'] # Menyimpan hak akses (misal: 'kasir' atau 'admin')
-        
-        flash('Login berhasil!', 'success')
+        session['username'] = user.username
+        session['role'] = user.role # Menyimpan hak akses (misal: 'kasir' atau 'admin')
         return redirect(url_for('kasir.dashboard'))
     else:
         # Jika salah username atau salah password

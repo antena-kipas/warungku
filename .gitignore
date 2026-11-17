@@ -19,6 +19,9 @@ instance/
 *.db
 kasir.db
 
+# Foto barang yang diunggah pengguna (data, bukan kode)
+static/uploads/
+
 # Node modules
 node_modules/
 package-lock.json

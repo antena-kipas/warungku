@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block judul %}Warungku{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    {% block kepala %}{% endblock %}
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden flex">
+
+    {# Satu tombol menu di sisi kiri. "aktif" menandai halaman yang sedang dibuka. #}
+    {% macro menu(alamat, nama, ikon, aktif) %}
+    <a href="{{ alamat }}" {% if aktif %}aria-current="page"{% endif %}
+       class="flex items-center gap-3 px-4 py-3 rounded-xl text-lg transition-colors
+              {% if aktif %}bg-blue-600 text-white font-semibold{% else %}text-slate-300 hover:bg-slate-800 hover:text-white font-medium{% endif %}">
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ ikon }}"></path></svg>
+        {{ nama }}
+    </a>
+    {% endmacro %}
+
+    <aside class="w-60 shrink-0 bg-slate-900 text-white flex flex-col h-full shadow-2xl z-20">
+        <div class="p-6 flex items-center justify-center border-b border-slate-700">
+            <div class="text-2xl font-extrabold tracking-wider text-blue-400">WARUNGKU</div>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-2">
+            {{ menu('/dashboard', 'Dashboard', 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', request.endpoint == 'kasir.dashboard') }}
+            {{ menu('/transaksi', 'Buka Kasir', 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z', false) }}
+            {{ menu('/produk', 'Data Barang', 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', request.endpoint == 'inventori.daftar_produk') }}
+        </nav>
+
+        <div class="p-4 border-t border-slate-700">
+            <a href="/logout" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500 hover:text-white rounded-xl font-bold text-lg transition-colors">
+                <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                Keluar
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 min-w-0 overflow-y-auto p-6 lg:p-8">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div role="status" class="p-4 mb-6 rounded-xl font-bold text-lg
+                    {% if category == 'success' %}bg-green-100 text-green-800
+                    {% elif category == 'danger' %}bg-red-100 text-red-800
+                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        {% block isi %}{% endblock %}
+    </main>
+
+    {% block skrip %}{% endblock %}
+</body>
+</html>
