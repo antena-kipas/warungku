@@ -433,7 +433,8 @@
                 setTimeout(() => window.print(), 100);
             } catch (galat) {
                 // Keranjang sengaja TIDAK dikosongkan supaya bisa dicoba lagi
-                const pesan = galat instanceof TypeError ? 'Tidak ada sambungan internet. Belanjaan belum tersimpan, coba tekan BAYAR lagi.' : galat.message;
+                // TypeError = halaman tidak bisa menghubungi aplikasi kasir (misalnya aplikasinya sedang mati)
+                const pesan = galat instanceof TypeError ? 'Aplikasi kasir tidak merespons. Belanjaan belum tersimpan, coba tekan BAYAR lagi.' : galat.message;
                 tampilkanPesan(pesan, false);
             } finally {
                 sedangBayar = false;

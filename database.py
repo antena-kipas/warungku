@@ -1,8 +1,19 @@
-"""Lapisan database Warungku.
+"""Lapisan database aplikasi kasir Warungku.
 
-Memakai SQLAlchemy supaya kode yang sama bisa jalan di dua tempat:
-- SQLite      -> default, untuk coba-coba di laptop (file kasir.db di folder proyek)
-- PostgreSQL  -> untuk online (Supabase, Neon, Railway, dll). Cukup isi DATABASE_URL di file .env
+Posisi file ini dalam arsitektur proyek:
+
+    [Komputer kasir]                      [Server AI di internet]          [HP]
+    Flask Warungku  <-- file ini           FastAPI + model AI               Flutter
+    PostgreSQL lokal (localhost)           PostgreSQL sendiri (pgvector)    kirim foto
+
+Database di sini HANYA milik komputer kasir: barang, transaksi, stok, akun login.
+Server AI punya database sendiri di proyek terpisah. Kasir tidak pernah membuka
+database server, dan server tidak pernah membuka database kasir; keduanya bertukar
+data lewat jaringan (HTTP/WebSocket). Karena databasenya ada di komputer kasir,
+kasir tetap bisa berjualan walaupun internet mati.
+
+SQLAlchemy dipakai sebagai penghubung Python ke PostgreSQL: tabel ditulis sebagai
+class Python (lihat bagian "Tabel-tabel" di bawah), bukan perintah SQL mentah.
 """
 import os
 from datetime import datetime, timedelta, timezone
@@ -18,39 +29,34 @@ WIB = timezone(timedelta(hours=7))
 def waktu_sekarang():
     """Waktu saat ini dalam WIB.
 
-    Server cloud biasanya memakai jam UTC. Dengan fungsi ini jam transaksi tetap jam warung,
-    baik aplikasinya jalan di laptop maupun di server.
+    Jam transaksi selalu dicatat dalam WIB, tidak bergantung pada pengaturan zona waktu
+    komputer kasir.
     """
     return datetime.now(WIB).replace(tzinfo=None)
 
 
 def alamat_database():
-    """Menentukan database yang dipakai berdasarkan DATABASE_URL di .env."""
+    """Alamat PostgreSQL komputer kasir, diambil dari DATABASE_URL di file .env.
+
+    Contoh isi .env:  DATABASE_URL=postgresql://warungku:passwordnya@localhost:5432/warungku
+    """
     url = os.getenv('DATABASE_URL', '').strip()
-    if not url:
-        # Alamat lengkap ke folder proyek, supaya file database-nya selalu sama
-        # dari folder mana pun aplikasinya dijalankan.
-        folder_proyek = os.path.dirname(os.path.abspath(__file__))
-        return 'sqlite:///' + os.path.join(folder_proyek, 'kasir.db').replace('\\', '/')
-    # Penyedia cloud memberi alamat berawalan postgres:// atau postgresql://,
-    # sedangkan SQLAlchemy perlu tahu driver yang dipakai (psycopg versi 3).
-    if url.startswith('postgres://'):
-        url = 'postgresql://' + url[len('postgres://'):]
-    if url.startswith('postgresql://'):
-        url = 'postgresql+psycopg://' + url[len('postgresql://'):]
-    return url
+    if not url.startswith('postgresql://'):
+        raise SystemExit(
+            'Gagal: DATABASE_URL di file .env belum diisi atau bukan alamat PostgreSQL '
+            '(harus diawali "postgresql://"). Lihat contohnya di .env.example.'
+        )
+    # Beri tahu SQLAlchemy driver yang dipakai untuk berbicara dengan PostgreSQL (psycopg versi 3).
+    return 'postgresql+psycopg://' + url[len('postgresql://'):]
 
 
-def opsi_engine(url):
-    """Pengaturan koneksi tambahan khusus PostgreSQL di cloud."""
-    if not url.startswith('postgresql'):
-        return {}
+def opsi_engine():
+    """Pengaturan koneksi ke PostgreSQL."""
     return {
-        # Database gratisan sering memutus koneksi yang menganggur; cek dulu sebelum dipakai.
+        # Kalau layanan PostgreSQL sempat dimatikan/dinyalakan ulang (misalnya komputer kasir
+        # baru bangun dari sleep), koneksi lama sudah putus. Opsi ini memeriksa koneksi dulu
+        # sebelum dipakai, supaya kasir tidak mendapat error.
         'pool_pre_ping': True,
-        'pool_recycle': 300,
-        # Wajib dimatikan kalau lewat connection pooler (PgBouncer) seperti di Supabase.
-        'connect_args': {'prepare_threshold': None},
     }
 
 

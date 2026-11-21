@@ -14,13 +14,16 @@ from routes.kasir import kasir_bp
 from routes.inventori import inventori_bp
 
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'super_rahasia_default_key_yang_harus_diganti') # Ambil dari .env, sediakan nilai default
+
+# Kunci untuk mengamankan sesi login. Wajib diisi di .env, tidak ada nilai bawaan di kode.
+app.secret_key = os.getenv('SECRET_KEY', '').strip()
+if not app.secret_key:
+    raise SystemExit('Gagal: SECRET_KEY belum diisi di file .env. Lihat contohnya di .env.example.')
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
-# Database: SQLite kalau DATABASE_URL kosong, PostgreSQL kalau diisi
-alamat_db = alamat_database()
-app.config['SQLALCHEMY_DATABASE_URI'] = alamat_db
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = opsi_engine(alamat_db)
+# Database: PostgreSQL di komputer kasir, alamatnya dari DATABASE_URL di .env
+app.config['SQLALCHEMY_DATABASE_URI'] = alamat_database()
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = opsi_engine()
 db.init_app(app)
 
 # Batas ukuran upload gambar barang

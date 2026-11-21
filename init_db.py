@@ -4,7 +4,10 @@ Cara pakai:
     python init_db.py            -> membuat tabel yang belum ada (aman dijalankan berulang kali)
     python init_db.py --reset    -> MENGHAPUS SEMUA DATA lalu membuat tabel dari nol
 
-Username dan password akun pertama bisa diatur lewat ADMIN_USERNAME dan ADMIN_PASSWORD di .env.
+Username dan password akun pertama WAJIB diisi di file .env:
+    ADMIN_USERNAME=...
+    ADMIN_PASSWORD=...
+Tidak ada nilai bawaan di kode ini, supaya tidak ada password yang ikut tersimpan di git.
 """
 import os
 import sys
@@ -13,6 +16,17 @@ from werkzeug.security import generate_password_hash
 
 from app import app
 from database import db, User
+
+PANJANG_MINIMAL_PASSWORD = 8
+
+
+def ambil_dari_env(nama):
+    """Ambil isian dari .env. Hentikan program dengan pesan jelas kalau belum diisi."""
+    nilai = os.getenv(nama, '').strip()
+    if not nilai:
+        sys.exit(f"Gagal: {nama} belum diisi di file .env. Lihat contohnya di .env.example.")
+    return nilai
+
 
 reset = '--reset' in sys.argv
 
@@ -24,25 +38,23 @@ with app.app_context():
     # 1. Buat semua tabel yang didefinisikan di database.py
     db.create_all()
 
-    # 2. Buat akun pertama (akun kasir nenek) kalau belum ada
-    username = os.getenv('ADMIN_USERNAME', 'warungku')
-    password_asli = os.getenv('ADMIN_PASSWORD', 'password')
+    # 2. Buat akun pertama kalau belum ada
+    username = ambil_dari_env('ADMIN_USERNAME')
 
     if User.query.filter_by(username=username).first():
         print(f"Akun '{username}' sudah ada, tidak dibuat ulang.")
     else:
+        password_asli = ambil_dari_env('ADMIN_PASSWORD')
+        if len(password_asli) < PANJANG_MINIMAL_PASSWORD:
+            sys.exit(f"Gagal: ADMIN_PASSWORD minimal {PANJANG_MINIMAL_PASSWORD} karakter.")
+
         db.session.add(User(
             username=username,
-            password=generate_password_hash(password_asli),
+            password=generate_password_hash(password_asli),  # yang disimpan hanya hasil acakannya (hash)
             role='admin',
         ))
         db.session.commit()
-        print(f"Akun berhasil ditambahkan -> Username: {username}")
-        if password_asli == 'password':
-            print("PERINGATAN: password masih bawaan ('password'). Ganti lewat ADMIN_PASSWORD sebelum aplikasi dipakai online.")
+        print(f"Akun berhasil ditambahkan -> Username: {username} (password sesuai ADMIN_PASSWORD di .env)")
 
     alamat = db.engine.url
-    if alamat.get_backend_name() == 'sqlite':
-        print(f"Database siap dipakai: SQLite di {alamat.database}")
-    else:
-        print(f"Database siap dipakai: {alamat.get_backend_name()} di {alamat.host}/{alamat.database}")
+    print(f"Database siap dipakai: PostgreSQL di {alamat.host}:{alamat.port}/{alamat.database}")

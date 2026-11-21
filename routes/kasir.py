@@ -17,7 +17,7 @@ NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
 
 
 def barang_ke_dict(barang):
-    """Bentuk data barang yang dikirim ke layar kasir (dan nanti ke aplikasi Flutter)."""
+    """Bentuk data barang yang dikirim ke layar kasir."""
     return {
         'id': barang.id_barang,
         'barcode': barang.barcode or '',
@@ -33,7 +33,7 @@ def ringkasan_dashboard():
     """Mengumpulkan semua angka yang tampil di dashboard.
 
     Data 7 hari terakhir diambil sekali, lalu dihitung di Python. Untuk ukuran warung
-    (puluhan struk per hari) ini ringan, dan hasilnya sama di SQLite maupun PostgreSQL.
+    (puluhan struk per hari) ini ringan dan kodenya lebih mudah dibaca.
     """
     sekarang = waktu_sekarang()
     awal_hari_ini = sekarang.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -137,7 +137,7 @@ def dashboard():
 
 
 # Data dashboard dalam bentuk JSON. Dipakai halaman dashboard untuk memperbarui angka
-# secara otomatis, dan bisa dipakai juga oleh aplikasi Flutter.
+# secara otomatis tanpa memuat ulang halaman.
 @kasir_bp.route('/api/dashboard')
 @wajib_login
 def api_dashboard():
@@ -150,13 +150,6 @@ def api_dashboard():
 def transaksi():
     barang_list = Barang.query.order_by(Barang.nama_barang).all()
     return render_template('kasir.html', barang=[barang_ke_dict(b) for b in barang_list])
-
-
-@kasir_bp.route('/api/barang')
-@wajib_login
-def api_barang():
-    barang_list = Barang.query.order_by(Barang.nama_barang).all()
-    return jsonify([barang_ke_dict(b) for b in barang_list])
 
 
 # Menyimpan satu transaksi dari layar kasir
